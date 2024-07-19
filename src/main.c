@@ -86,32 +86,30 @@ static struct bt_conn *default_conn;  // Declare a pointer to a Bluetooth connec
 static struct bt_nus_client nus_client;  // Declare a Bluetooth NUS (Nordic UART Service) client structure
 
 
-static struct bt_uuid_16 discover_uuid = BT_UUID_INIT_16(0);
+static struct bt_uuid_16 uuid = BT_UUID_INIT_16(0);
 static struct bt_gatt_discover_params discover_params;
 static struct bt_gatt_subscribe_params subscribe_params;
 static struct bt_gatt_write_params write_params_ctrl;
 
-#define BT_UUID_TSS_VAL BT_UUID_128_ENCODE(0x00001560, 0x1212, 0xefde, 0x1560, 0x785feabcd123)
-#define BT_UUID_TSS BT_UUID_DECLARE_128(BT_UUID_TSS_VAL)
-
 #define BT_UUID_16_FBS_VAL 0x1560
-#define BT_UUID_16_FBS_CTRL_VAL 0x1561
-#define BT_UUID_16_FBS_AVGS_VAL 0x1562
+#define BT_UUID_16_FBS_VOLT_VAL 0x1561
 #define BT_UUID_16_FBS BT_UUID_DECLARE_16(BT_UUID_16_FBS_VAL)
-#define BT_UUID_16_FBS_CTRL BT_UUID_DECLARE_16(BT_UUID_16_FBS_CTRL_VAL)
-#define BT_UUID_16_FBS_AVGS BT_UUID_DECLARE_16(BT_UUID_16_FBS_AVGS_VAL)
+#define BT_UUID_16_FBS_AVGS BT_UUID_DECLARE_16(BT_UUID_16_FBS_VOLT_VAL)
 
+#define RECEIVE_BUFF_SIZE 10
+// important that this value is not set too low, because otherwise values are sometimes sent twice to peripheral (emperically tested)
+#define RECEIVE_TIMEOUT 300
 
+// TODO: if you want to use Serial Terminal of nRF Desktop app to write message from laptop to central's UART, change the following:
+// 			- in line below: change "uart1" to "uart0" in DT_NODELABEL
+//			- in notify_func_avgs: comment "uart_tx" function
+// const struct device *uart = DEVICE_DT_GET(DT_NODELABEL(uart1));
+static uint8_t tx_buf[35] = {0};
+static uint8_t rx_buf[RECEIVE_BUFF_SIZE] = {0};
 
-
-static void write_func_ctrl(struct bt_conn *conn, uint8_t err, struct bt_gatt_write_params *params){
-	if (err) {
-		printk("GATT write to peripheral failed (err %d)\n", err);
-	} else {
-		printk("Successful GATT write to peripheral\n\n");
-	}
-}
-
+// *************************
+// GATT FUNCTIONS
+// *************************
 
 static uint8_t notify_func(struct bt_conn *conn,
 			   struct bt_gatt_subscribe_params *params,
@@ -127,14 +125,11 @@ static uint8_t notify_func(struct bt_conn *conn,
 	const char *msg_string = (const char *) data;
 
 	// printk("[NOTIFICATION] data %p length %u\n", data, length);
-	LOG_INF("[NOTIFICATION - AVGS] message: %s", msg_string);
+	LOG_INF("[NOTIFICATION - voltage] message: %s mV", msg_string);
 
-	// not needed to dissect string message at gateway, this can be done on Rasberry Pi with "sscanf" function
-	strcpy((char *) tx_buf, msg_string);
-	int err = uart_tx(uart, tx_buf, sizeof(tx_buf), SYS_FOREVER_US);
-	if (err) {
-		printk("Failed to transmit over UART (err %d)", err);
-	}
+	// send received data over UART
+	uart_tx(uart, data, length, SYS_FOREVER_MS);
+	
 
 	return BT_GATT_ITER_CONTINUE;
 }
@@ -152,22 +147,14 @@ static uint8_t discover_func(struct bt_conn *conn,
 		return BT_GATT_ITER_STOP;
 	}
 
-	printk("[ATTRIBUTE] handle %u\n", attr->handle);
+	char uuid_str[100];
+	bt_uuid_to_str(attr->uuid, uuid_str, 10);
+	printk("[ATTRIBUTE] handle: %u, uuid: %s\n", attr->handle, uuid_str);
 
-	if (!bt_uuid_cmp(discover_params.uuid, BT_UUID_HRS)) {
-		memcpy(&discover_uuid, BT_UUID_HRS_MEASUREMENT, sizeof(discover_uuid));
-		discover_params.uuid = &discover_uuid.uuid;
-		discover_params.start_handle = attr->handle + 1;
-		discover_params.type = BT_GATT_DISCOVER_CHARACTERISTIC;
-
-		err = bt_gatt_discover(conn, &discover_params);
-		if (err) {
-			printk("Discover failed (err %d)\n", err);
-		}
-	} else if (!bt_uuid_cmp(discover_params.uuid,
-				BT_UUID_HRS_MEASUREMENT)) {
-		memcpy(&discover_uuid, BT_UUID_GATT_CCC, sizeof(discover_uuid));
-		discover_params.uuid = &discover_uuid.uuid;
+	if (!bt_uuid_cmp(discover_params.uuid, BT_UUID_16_FBS_AVGS)) {
+		//printk("if statetement 2\n");
+		memcpy(&uuid, BT_UUID_GATT_CCC, sizeof(uuid));
+		discover_params.uuid = &uuid.uuid;
 		discover_params.start_handle = attr->handle + 2;
 		discover_params.type = BT_GATT_DISCOVER_DESCRIPTOR;
 		subscribe_params.value_handle = bt_gatt_attr_value_handle(attr);
@@ -176,7 +163,8 @@ static uint8_t discover_func(struct bt_conn *conn,
 		if (err) {
 			printk("Discover failed (err %d)\n", err);
 		}
-	} else {
+	} else if (!bt_uuid_cmp(discover_params.uuid, BT_UUID_GATT_CCC)){
+		//printk("if statetement 3\n");
 		subscribe_params.notify = notify_func;
 		subscribe_params.value = BT_GATT_CCC_NOTIFY;
 		subscribe_params.ccc_handle = attr->handle;
@@ -185,14 +173,18 @@ static uint8_t discover_func(struct bt_conn *conn,
 		if (err && err != -EALREADY) {
 			printk("Subscribe failed (err %d)\n", err);
 		} else {
-			printk("[SUBSCRIBED]\n");
+			printk("[SUBSCRIBED TO AVGS CHC]\n");
 		}
+
+		return BT_GATT_ITER_STOP;
+	} else {
 
 		return BT_GATT_ITER_STOP;
 	}
 
 	return BT_GATT_ITER_STOP;
 }
+
 
 static void ble_data_sent(struct bt_nus_client *nus, uint8_t err,
                     const uint8_t *const data, uint16_t len)

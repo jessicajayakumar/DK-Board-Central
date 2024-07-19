@@ -1,6 +1,7 @@
 {
     "nrf-connect.applications": [],
     "files.associations": {
-        "nus_client.h": "c"
+        "nus_client.h": "c",
+        "uart.h": "c"
     }
 }
