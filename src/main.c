@@ -68,7 +68,8 @@ LOG_MODULE_REGISTER(LOG_MODULE_NAME, LOG_LEVEL_DBG); // Register the logging mod
 #define UART_WAIT_FOR_BUF_DELAY K_MSEC(50) // Define the delay for waiting for a UART buffer
 #define UART_RX_TIMEOUT 50000 /* Wait for RX complete event time in microseconds. */ // Define the timeout for receiving data over UART
 
-static const struct device *uart = DEVICE_DT_GET(DT_CHOSEN(nordic_nus_uart)); // Get the UART device from the device tree
+// static const struct device *uart = DEVICE_DT_GET(DT_CHOSEN(uart0)); // Get the UART device from the device tree
+const struct device *uart = DEVICE_DT_GET(DT_NODELABEL(uart0));
 static struct k_work_delayable uart_work; // Define a delayable work item for UART processing
 
 K_SEM_DEFINE(nus_write_sem, 0, 1); // Define a semaphore for synchronizing NUS write operations
@@ -89,12 +90,7 @@ static struct bt_nus_client nus_client;  // Declare a Bluetooth NUS (Nordic UART
 static struct bt_uuid_16 uuid = BT_UUID_INIT_16(0);
 static struct bt_gatt_discover_params discover_params;
 static struct bt_gatt_subscribe_params subscribe_params;
-static struct bt_gatt_write_params write_params_ctrl;
-
-#define BT_UUID_16_FBS_VAL 0x1560
-#define BT_UUID_16_FBS_VOLT_VAL 0x1561
-#define BT_UUID_16_FBS BT_UUID_DECLARE_16(BT_UUID_16_FBS_VAL)
-#define BT_UUID_16_FBS_AVGS BT_UUID_DECLARE_16(BT_UUID_16_FBS_VOLT_VAL)
+static struct bt_gatt_write_params write_params;
 
 #define RECEIVE_BUFF_SIZE 10
 // important that this value is not set too low, because otherwise values are sometimes sent twice to peripheral (emperically tested)
@@ -107,9 +103,22 @@ static struct bt_gatt_write_params write_params_ctrl;
 static uint8_t tx_buf[35] = {0};
 static uint8_t rx_buf[RECEIVE_BUFF_SIZE] = {0};
 
+#define BT_UUID_CUSTOM_SERVICE BT_UUID_DECLARE_128(BT_UUID_128_ENCODE(0x12345678, 0x1234, 0x5678, 0x1234, 0x1234567890AB))
+#define BT_UUID_CUSTOM_CHAR BT_UUID_DECLARE_128(BT_UUID_128_ENCODE(0x12345678, 0x1234, 0x5678, 0x1234, 0x1234567890AC))
+
+
 // *************************
 // GATT FUNCTIONS
 // *************************
+
+static void write_func_ctrl(struct bt_conn *conn, uint8_t err, struct bt_gatt_write_params *params){
+	if (err) {
+		printk("GATT write to peripheral failed (err %d)\n", err);
+	} else {
+		printk("Successful GATT write to peripheral\n\n");
+	}
+}
+
 
 static uint8_t notify_func(struct bt_conn *conn,
 			   struct bt_gatt_subscribe_params *params,
@@ -125,12 +134,9 @@ static uint8_t notify_func(struct bt_conn *conn,
 	const char *msg_string = (const char *) data;
 
 	// printk("[NOTIFICATION] data %p length %u\n", data, length);
-	LOG_INF("[NOTIFICATION - voltage] message: %s mV", msg_string);
+	LOG_INF("[NOTIFICATION] %s", msg_string);
 
 	// send received data over UART
-	uart_tx(uart, data, length, SYS_FOREVER_MS);
-	
-
 	return BT_GATT_ITER_CONTINUE;
 }
 
@@ -151,13 +157,26 @@ static uint8_t discover_func(struct bt_conn *conn,
 	bt_uuid_to_str(attr->uuid, uuid_str, 10);
 	printk("[ATTRIBUTE] handle: %u, uuid: %s\n", attr->handle, uuid_str);
 
-	if (!bt_uuid_cmp(discover_params.uuid, BT_UUID_16_FBS_AVGS)) {
-		//printk("if statetement 2\n");
+	if (!bt_uuid_cmp(discover_params.uuid, BT_UUID_CUSTOM_SERVICE)) {
+		//printk("if statetement 1\n");
+		memcpy(&uuid, BT_UUID_CUSTOM_CHAR, sizeof(uuid));
+		discover_params.uuid = &uuid.uuid;
+		discover_params.start_handle = attr->handle + 1;
+		discover_params.type = BT_GATT_DISCOVER_CHARACTERISTIC;
+
+		err = bt_gatt_discover(conn, &discover_params);
+		if (err) {
+			printk("Discover failed (err %d)\n", err);
+		}
+    } else if (!bt_uuid_cmp(discover_params.uuid, BT_UUID_CUSTOM_CHAR)) {
+		//printk("if statetement 1\n");
 		memcpy(&uuid, BT_UUID_GATT_CCC, sizeof(uuid));
 		discover_params.uuid = &uuid.uuid;
 		discover_params.start_handle = attr->handle + 2;
-		discover_params.type = BT_GATT_DISCOVER_DESCRIPTOR;
-		subscribe_params.value_handle = bt_gatt_attr_value_handle(attr);
+		discover_params.type = BT_GATT_DISCOVER_CHARACTERISTIC;
+
+		write_params.func = write_func_ctrl;
+		write_params.handle = attr->handle + 1;
 
 		err = bt_gatt_discover(conn, &discover_params);
 		if (err) {
@@ -185,6 +204,12 @@ static uint8_t discover_func(struct bt_conn *conn,
 	return BT_GATT_ITER_STOP;
 }
 
+
+
+
+// *************************
+//      BLE Functions
+// *************************
 
 static void ble_data_sent(struct bt_nus_client *nus, uint8_t err,
                     const uint8_t *const data, uint16_t len)
@@ -258,6 +283,10 @@ static uint8_t ble_data_received(struct bt_nus_client *nus,
     return BT_GATT_ITER_CONTINUE;
 }
 
+// *************************
+// 	    UART Functions
+// *************************
+
 // UART event callback function.
 static void uart_cb(const struct device *dev, struct uart_event *evt, void *user_data)
 {
@@ -292,7 +321,7 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
             aborted_len = 0; // Reset the length of the aborted transmission.
         } else {
             // Retrieve the uart_data_t structure from the current transmission buffer.
-			LOG_INF("Retrieving uart_data_t structure from the current transmission buffer");)
+			LOG_INF("Retrieving uart_data_t structure from the current transmission buffer");
             buf = CONTAINER_OF(evt->data.tx.buf, struct uart_data_t, data[0]);
         }
 
@@ -477,6 +506,10 @@ static int uart_init(void)
 	LOG_INF("Enabled UART reception, uart init function");
 }
 
+// *************************
+// BLE Connectivity Functions
+// *************************
+
 static void discovery_complete(struct bt_gatt_dm *dm,
 			       void *context)
 {
@@ -630,17 +663,40 @@ BT_CONN_CB_DEFINE(conn_callbacks) = {
 	.security_changed = security_changed
 };
 
+
 static void scan_filter_match(struct bt_scan_device_info *device_info,
 			      struct bt_scan_filter_match *filter_match,
 			      bool connectable)
 {
+	int err;
 	char addr[BT_ADDR_LE_STR_LEN];
+	struct bt_conn_le_create_param *conn_params;
 
 	bt_addr_le_to_str(device_info->recv_info->addr, addr, sizeof(addr));
 
-	LOG_INF("Filters matched. Address: %s connectable: %d",
-		addr, connectable);
+	printk("Filters matched. Address: %s connectable: %s\n",
+		addr, connectable ? "yes" : "no");
+
+	err = bt_scan_stop();
+	if (err) {
+		printk("Stop LE scan failed (err %d)\n", err);
+	}
+
+	conn_params = BT_CONN_LE_CREATE_PARAM(
+			BT_CONN_LE_OPT_CODED | BT_CONN_LE_OPT_NO_1M,
+			BT_GAP_SCAN_FAST_INTERVAL,
+			BT_GAP_SCAN_FAST_INTERVAL);
+
+	err = bt_conn_le_create(device_info->recv_info->addr, conn_params,
+				BT_LE_CONN_PARAM_DEFAULT,
+				&default_conn);
+	if (err) {
+		printk("Create conn failed (err %d)\n", err);
+	}
+
+	printk("Connection pending\n");
 }
+
 
 static void scan_connecting_error(struct bt_scan_device_info *device_info)
 {
@@ -679,8 +735,19 @@ BT_SCAN_CB_INIT(scan_cb, scan_filter_match, NULL,
 static int scan_init(void)
 {
 	int err;
+	/* Use active scanning and disable duplicate filtering to handle any
+	 * devices that might update their advertising data at runtime. */
+	struct bt_le_scan_param scan_param = {
+		.type     = BT_LE_SCAN_TYPE_ACTIVE,
+		.interval = BT_GAP_SCAN_FAST_INTERVAL,
+		.window   = BT_GAP_SCAN_FAST_WINDOW,
+		.options  = BT_LE_SCAN_OPT_CODED | BT_LE_SCAN_OPT_NO_1M
+	};
+
 	struct bt_scan_init_param scan_init = {
-		.connect_if_match = 1,
+		.connect_if_match = 0,
+		.scan_param = &scan_param,
+		.conn_param = NULL
 	};
 
 	bt_scan_init(&scan_init);
@@ -740,6 +807,10 @@ static struct bt_conn_auth_info_cb conn_auth_info_callbacks = {
 	.pairing_complete = pairing_complete,
 	.pairing_failed = pairing_failed
 };
+
+// *************************
+// 	Main Function
+// *************************
 
 int main(void)
 {
