@@ -83,6 +83,15 @@ static uint8_t ble_data_received(struct bt_nus_client *nus,
 
 	int err;
 
+	// Print the data as a string
+    LOG_INF("Data received before sending to tx: %.*s", len, data);
+    LOG_INF("Data length: %d", len);
+
+    // Print the data as individual bytes
+    for (uint16_t i = 0; i < len; i++) {
+        LOG_INF("Byte %d: 0x%02X", i, data[i]);
+    }
+
 	for (uint16_t pos = 0; pos != len;) {
 		struct uart_data_t *tx = k_malloc(sizeof(*tx));
 
@@ -100,7 +109,12 @@ static uint8_t ble_data_received(struct bt_nus_client *nus,
 			tx->len = (len - pos);
 		}
 
+		LOG_INF("Data to be copied: %.*s", tx->len, &data[pos]);
+		
+
 		memcpy(tx->data, &data[pos], tx->len);
+		LOG_INF("Data received: %c", tx->data[0]);
+        LOG_INF("Data length: %d", tx->len);
 
 		pos += tx->len;
 
@@ -110,6 +124,12 @@ static uint8_t ble_data_received(struct bt_nus_client *nus,
 		if ((pos == len) && (data[len - 1] == '\r')) {
 			tx->data[tx->len] = '\n';
 			tx->len++;
+		}
+
+		LOG_INF("Received data into uart: %.*s", tx->len, tx->data);
+
+		for (size_t i = 0; i < tx->len; i++) {
+			LOG_INF("Received data in uart in hex: %02X", tx->data[i]);
 		}
 
 		err = uart_tx(uart, tx->data, tx->len, SYS_FOREVER_MS);
@@ -213,6 +233,17 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 		LOG_DBG("UART_RX_BUF_RELEASED");
 		buf = CONTAINER_OF(evt->data.rx_buf.buf, struct uart_data_t,
 				   data[0]);
+
+		
+		for (size_t i = 0; i < buf->len; i++) {
+			if ((buf->data[i] == '\n') || (buf->data[i] == '\r')) {
+				buf->data[i] = '\0';
+		
+				break;
+			}
+		}
+
+		LOG_INF("Data received: %s", buf->data);
 
 		if (buf->len > 0) {
 			k_fifo_put(&fifo_uart_rx_data, buf);
