@@ -33,7 +33,7 @@
 #include <zephyr/logging/log.h>
 
 #define LOG_MODULE_NAME central_uart
-LOG_MODULE_REGISTER(LOG_MODULE_NAME, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(LOG_MODULE_NAME);
 
 /* UART payload buffer element size. */
 #define UART_BUF_SIZE 20
@@ -83,14 +83,9 @@ static uint8_t ble_data_received(struct bt_nus_client *nus,
 
 	int err;
 
-	// Print the data as a string
-    LOG_INF("Data received before sending to tx: %.*s", len, data);
-    LOG_INF("Data length: %d", len);
-
-    // Print the data as individual bytes
-    for (uint16_t i = 0; i < len; i++) {
-        LOG_INF("Byte %d: 0x%02X", i, data[i]);
-    }
+	for (uint16_t i = 0; i < len; i++) {
+		LOG_INF("Byte %d: 0x%02X (decimal: %d)", i, data[i], data[i]);
+	}
 
 	for (uint16_t pos = 0; pos != len;) {
 		struct uart_data_t *tx = k_malloc(sizeof(*tx));
@@ -109,27 +104,17 @@ static uint8_t ble_data_received(struct bt_nus_client *nus,
 			tx->len = (len - pos);
 		}
 
-		LOG_INF("Data to be copied: %.*s", tx->len, &data[pos]);
-		
-
 		memcpy(tx->data, &data[pos], tx->len);
-		LOG_INF("Data received: %c", tx->data[0]);
-        LOG_INF("Data length: %d", tx->len);
 
 		pos += tx->len;
 
-		/* Append the LF character when the CR character triggered
-		 * transmission from the peer.
-		 */
 		if ((pos == len) && (data[len - 1] == '\r')) {
 			tx->data[tx->len] = '\n';
 			tx->len++;
 		}
 
-		LOG_INF("Received data into uart: %.*s", tx->len, tx->data);
-
 		for (size_t i = 0; i < tx->len; i++) {
-			LOG_INF("Received data in uart in hex: %02X", tx->data[i]);
+			LOG_INF("Received data in uart as raw integer: %d", tx->data[i]);	
 		}
 
 		err = uart_tx(uart, tx->data, tx->len, SYS_FOREVER_MS);
@@ -626,7 +611,6 @@ int main(void)
 		return 0;
 	}
 
-	printk("Starting Bluetooth Central UART example\n");
 
 	err = bt_scan_start(BT_SCAN_TYPE_SCAN_ACTIVE);
 	if (err) {
