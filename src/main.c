@@ -141,6 +141,8 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 	static uint8_t *aborted_buf;
 	static bool disable_req;
 
+	LOG_INF("UART event: %d", evt->type);
+
 	switch (evt->type) {
 	case UART_TX_DONE:
 		LOG_DBG("UART_TX_DONE");
@@ -226,17 +228,13 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 		LOG_DBG("UART_RX_BUF_RELEASED");
 		buf = CONTAINER_OF(evt->data.rx_buf.buf, struct uart_data_t,
 				   data[0]);
-
+	
 		for (size_t i = 0; i < buf->len; i++) {
 			if ((buf->data[i] == '\n') || (buf->data[i] == '\r')) {
 				buf->data[i] = '\0';
+		
 				break;
 			}
-			// else {
-			// 	// LOG_DBG("%c", buf->data[i]);
-			// 	// printf("%c", buf->data[i]);
-			// }
-			
 		}
 
 		LOG_INF("Data received: %s", buf->data);
