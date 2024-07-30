@@ -91,7 +91,7 @@ def plot_data(data, interval=1):
     plt.show()
 
 def main():
-    serial_port = '/dev/ttyACM0'  # Replace with your port
+    serial_port = '/dev/ttyACM1'  # Replace with your port
     baud_rate = 115200
     log_file_path = 'serial_log.txt'
     end_marker = b'\n'  # ASCII LF character
