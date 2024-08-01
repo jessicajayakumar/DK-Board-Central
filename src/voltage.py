@@ -146,14 +146,14 @@ def main():
     filter_data(log_file_path,file_1,file_2)
 
     file_path_1= 'freebot_1.txt'  
-    data = read_data_from_file(file_path_1)
-    if data:
-        plot_data(data)
+    data_1= read_data_from_file(file_path_1)
+    if data_1:
+        plot_data(data_1)
         
     file_path_2= 'freebot_2.txt'  
-    data = read_data_from_file(file_path_2)
-    if data:
-        plot_data(data)
+    data_2= read_data_from_file(file_path_2)
+    if data_2:
+        plot_data(data_2)
 
 if __name__ == "__main__":
     main()
