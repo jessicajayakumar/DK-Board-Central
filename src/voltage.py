@@ -70,6 +70,23 @@ def read_data_from_file(file_path):
         print(f"File not found: {file_path}")
     return data
 
+def filter_data(file_path,file_1,file_2):
+    """
+    Filters the data from the log file and writes the filtered data to a new file.
+    
+    Args:
+    - file_path (str): The path to the log file.
+    """
+    data = read_data_from_file(file_path)
+    if data:
+        with open(file_1, 'w') as file1:
+            with open(file_2, 'w') as file2:
+                for i in range(0, len(data),2):
+                    if data[i] == 1:
+                        file1.write(f"{data[i+1]}\n")
+                    else:
+                        file2.write(f"{data[i+1]}\n")
+
 def plot_data(data, interval=1):
     """
     Plots the ASCII decimal values using time in seconds as the x-axis.
@@ -94,6 +111,8 @@ def main():
     serial_port = '/dev/ttyACM1'  # Replace with your port
     baud_rate = 115200
     log_file_path = 'serial_log.txt'
+    file_1='freebot_1.txt'
+    file_2='freebot_2.txt'
     end_marker = b'\n'  # ASCII LF character
 
     # Open the serial port
@@ -124,8 +143,15 @@ def main():
             ser.close()
             print("Serial port closed.")
 
-    file_path = 'serial_log.txt'  # Path to your log file
-    data = read_data_from_file(file_path)
+    filter_data(log_file_path,file_1,file_2)
+
+    file_path_1= 'freebot_1.txt'  
+    data = read_data_from_file(file_path_1)
+    if data:
+        plot_data(data)
+        
+    file_path_2= 'freebot_2.txt'  
+    data = read_data_from_file(file_path_2)
     if data:
         plot_data(data)
 
