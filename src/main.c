@@ -33,7 +33,7 @@
 #include <zephyr/logging/log.h>
 
 #define LOG_MODULE_NAME central_uart
-LOG_MODULE_REGISTER(LOG_MODULE_NAME);
+LOG_MODULE_REGISTER(LOG_MODULE_NAME, LOG_LEVEL_DBG);
 
 /* UART payload buffer element size. */
 #define UART_BUF_SIZE 20
