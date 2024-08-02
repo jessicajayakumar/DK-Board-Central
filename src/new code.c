@@ -63,7 +63,6 @@ static struct k_sem nus_write_sem[MAX_CONN];
 static struct bt_conn *default_conn[MAX_CONN];
 static struct bt_nus_client nus_client[MAX_CONN];
 
-
 void init_fifos_and_sems(void)
 {
     for (int i = 0; i < MAX_CONN; i++) {
@@ -73,16 +72,10 @@ void init_fifos_and_sems(void)
     }
 }
 
-
 static void ble_data_sent(struct bt_nus_client *nus, uint8_t err,
 					const uint8_t *const data, uint16_t len)
 {
-	ARG_UNUSED(nus);
-	ARG_UNUSED(data);
-	ARG_UNUSED(len);
-
-	int conn_index=nus - nus_client;
-
+	int conn_index = nus - nus_client;
 	k_sem_give(&nus_write_sem[conn_index]);
 
 	if (err) {
@@ -93,11 +86,8 @@ static void ble_data_sent(struct bt_nus_client *nus, uint8_t err,
 static uint8_t ble_data_received(struct bt_nus_client *nus,
 						const uint8_t *data, uint16_t len)
 {
-	ARG_UNUSED(nus);
-
+	int conn_index = nus - nus_client;
 	int err;
-
-	int conn_index=nus - nus_client;
 
 	for (uint16_t i = 0; i < len; i++) {
 		LOG_INF("Byte %d: 0x%02X (decimal: %d)", i, data[i], data[i]);
@@ -150,7 +140,7 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 	struct uart_data_t *buf;
 	static uint8_t *aborted_buf;
 	static bool disable_req;
-	int conn_index=*(int *)user_data;
+	int conn_index = *(int *)user_data;
 
 	switch (evt->type) {
 	case UART_TX_DONE:
@@ -277,8 +267,8 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 
 static void uart_work_handler(struct k_work *item)
 {
-	struct uart_data_t *buf;
 	int conn_index = item - uart_work;
+	struct uart_data_t *buf;
 
 	buf = k_malloc(sizeof(*buf));
 	if (buf) {
@@ -295,18 +285,10 @@ static void uart_work_handler(struct k_work *item)
 static int uart_init(void)
 {
 	int err;
-	struct uart_data_t *rx;
 
 	if (!device_is_ready(uart)) {
 		LOG_ERR("UART device not ready");
 		return -ENODEV;
-	}
-
-	rx = k_malloc(sizeof(*rx));
-	if (rx) {
-		rx->len = 0;
-	} else {
-		return -ENOMEM;
 	}
 
 	for (int i = 0; i < MAX_CONN; i++) {
@@ -315,84 +297,73 @@ static int uart_init(void)
 
 	err = uart_callback_set(uart, uart_cb, NULL);
 	if (err) {
+		LOG_ERR("Cannot initialize UART callback");
 		return err;
 	}
 
-	// return uart_rx_enable(uart, rx->data, sizeof(rx->data),
-	// 		      UART_RX_TIMEOUT);
-
 	k_work_reschedule(&uart_work[0], K_NO_WAIT);
-	return 0;
 
+	return 0;
 }
 
-static void discovery_complete(struct bt_gatt_dm *dm,
-			       void *context)
+static void discovery_completed(struct bt_gatt_dm *dm,
+					void *context)
 {
+	int err;
 	int conn_index = *(int *)context;
 	struct bt_nus_client *nus = &nus_client[conn_index];
-	LOG_INF("Service discovery completed");
+
+	err = bt_nus_handles_assign(dm, nus);
+	if (err) {
+		LOG_ERR("Could not init NUS client object, error: %d",
+			err);
+	}
 
 	bt_gatt_dm_data_print(dm);
+	bt_gatt_dm_done(dm);
 
-	bt_nus_handles_assign(dm, nus);
-	bt_nus_subscribe_receive(nus);
-
-	bt_gatt_dm_data_release(dm);
+	printk("Service discovery completed\n");
 }
 
 static void discovery_service_not_found(struct bt_conn *conn,
-					void *context)
+					  void *context)
 {
-	LOG_INF("Service not found");
+	printk("Service not found\n");
 	bt_gatt_dm_data_release(context);
 }
 
 static void discovery_error(struct bt_conn *conn,
-			    int err,
-			    void *context)
+				int err,
+				void *context)
 {
-	LOG_WRN("Error while discovering GATT database: (%d)", err);
+	printk("The discovery procedure failed, err %d\n", err);
 	bt_gatt_dm_data_release(context);
 }
 
-struct bt_gatt_dm_cb discovery_cb = {
-	.completed         = discovery_complete,
-	.service_not_found = discovery_service_not_found,
-	.error_found       = discovery_error,
-};
-
 static void gatt_discover(struct bt_conn *conn)
 {
+	static const struct bt_gatt_dm_cb discover_cb = {
+		.completed = discovery_completed,
+		.service_not_found = discovery_service_not_found,
+		.error_found = discovery_error,
+	};
+
 	int err;
-
-	
 	int conn_index = *(int *)bt_conn_get_user_data(conn);
-
 	err = bt_gatt_dm_start(conn,
-			       BT_UUID_NUS_SERVICE,
-			       &discovery_cb,
-			       &conn_index);
+				BT_UUID_NUS_SERVICE,
+				&discover_cb,
+				&conn_index);
 	if (err) {
-		LOG_ERR("could not start the discovery procedure, error "
-			"code: %d", err);
-	}
-}
-
-static void exchange_func(struct bt_conn *conn, uint8_t err, struct bt_gatt_exchange_params *params)
-{
-	if (!err) {
-		LOG_INF("MTU exchange done");
-	} else {
-		LOG_WRN("MTU exchange failed (err %" PRIu8 ")", err);
+		printk("Could not start the discovery procedure, error "
+		       "code: %d\n", err);
 	}
 }
 
 static void connected(struct bt_conn *conn, uint8_t conn_err)
 {
-	char addr[BT_ADDR_LE_STR_LEN];
 	int err;
-	int conn_index=-1;
+	int conn_index = -1;
 
 	for (int i = 0; i < MAX_CONN; i++) {
 		if (default_conn[i] == NULL) {
@@ -408,126 +379,23 @@ static void connected(struct bt_conn *conn, uint8_t conn_err)
 	}
 
 	if (conn_err) {
-		LOG_INF("Failed to connect to %s (%d)", addr, conn_err);
-
-		if (default_conn[conn_index] == conn) {
-			bt_conn_unref(default_conn[conn_index]);
-			default_conn[conn_index] = NULL;
-
-			err = bt_scan_start(BT_SCAN_TYPE_SCAN_ACTIVE);
-			if (err) {
-				LOG_ERR("Scanning failed to start (err %d)",
-					err);
-			}
-		}
-
+		printk("Failed to connect to peripheral: %u\n", conn_err);
+		bt_conn_unref(default_conn[conn_index]);
+		default_conn[conn_index] = NULL;
 		return;
 	}
 
-	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
-
-	LOG_INF("Connected: %s", addr);
-
-	static struct bt_gatt_exchange_params exchange_params;
-
-	exchange_params.func = exchange_func;
-	err = bt_gatt_exchange_mtu(conn, &exchange_params);
-	if (err) {
-		LOG_WRN("MTU exchange failed (err %d)", err);
-	}
-
-	err = bt_conn_set_security(conn, BT_SECURITY_L2);
-	if (err) {
-		LOG_WRN("Failed to set security: %d", err);
-
-		gatt_discover(conn);
-	}
-
-	// err = bt_scan_stop();
-	// if ((!err) && (err != -EALREADY)) {
-	// 	LOG_ERR("Stop LE scan failed (err %d)", err);
-	// }
-}
-
-static void disconnected(struct bt_conn *conn, uint8_t reason)
-{
-	char addr[BT_ADDR_LE_STR_LEN];
-	int err;
-	int conn_index=-1;
-
-	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
-
-	LOG_INF("Disconnected: %s (reason %u)", addr, reason);
-
-	for (int i = 0; i < MAX_CONN; i++) {
-		if (default_conn[i] == conn) {
-			bt_conn_unref(default_conn[i]);
-			default_conn[i] = NULL;
-			conn_index = i;
-			break;
-		}
-	}
-
-	if (conn_index == -1) {
-		LOG_ERR("No matching connection found");
-		return;
-	}
-
-	// bt_conn_unref(default_conn[conn_index]);
-	// default_conn[conn_index] = NULL;
-
-	err = bt_scan_start(BT_SCAN_TYPE_SCAN_ACTIVE);
-	if (err) {
-		LOG_ERR("Scanning failed to start (err %d)",
-			err);
-	}
-}
-
-static void security_changed(struct bt_conn *conn, bt_security_t level,
-			     enum bt_security_err err)
-{
-	char addr[BT_ADDR_LE_STR_LEN];
-
-	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
-
-	if (!err) {
-		LOG_INF("Security changed: %s level %u", addr, level);
-	} else {
-		LOG_WRN("Security failed: %s level %u err %d", addr,
-			level, err);
-	}
+	printk("Connected: %d\n", conn_index);
 
 	gatt_discover(conn);
 }
 
-BT_CONN_CB_DEFINE(conn_callbacks) = {
-	.connected = connected,
-	.disconnected = disconnected,
-	.security_changed = security_changed
-};
-
-static void scan_filter_match(struct bt_scan_device_info *device_info,
-			      struct bt_scan_filter_match *filter_match,
-			      bool connectable)
+static void connected(struct bt_conn *conn, uint8_t conn_err)
 {
-	char addr[BT_ADDR_LE_STR_LEN];
+	int err;
+	int conn_index = -1;
 
-	bt_addr_le_to_str(device_info->recv_info->addr, addr, sizeof(addr));
-
-	LOG_INF("Filters matched. Address: %s connectable: %d",
-		addr, connectable);
-}
-
-static void scan_connecting_error(struct bt_scan_device_info *device_info)
-{
-	LOG_WRN("Connecting failed");
-}
-
-static void scan_connecting(struct bt_scan_device_info *device_info,
-			    struct bt_conn *conn)
-{
-	int conn_index=-1;
-
+	// Find an available slot for the new connection
 	for (int i = 0; i < MAX_CONN; i++) {
 		if (default_conn[i] == NULL) {
 			default_conn[i] = bt_conn_ref(conn);
@@ -540,206 +408,131 @@ static void scan_connecting(struct bt_scan_device_info *device_info,
 		LOG_ERR("No free connection slots available");
 		return;
 	}
+
+	if (conn_err) {
+		printk("Failed to connect to peripheral: %u\n", conn_err);
+		bt_conn_unref(default_conn[conn_index]);
+		default_conn[conn_index] = NULL;
+		return;
+	}
+
+	printk("Connected: %d\n", conn_index);
+
+	// Define MTU exchange parameters
+	static struct bt_gatt_exchange_params exchange_params;
+	exchange_params.func = exchange_func;
+
+	// Start MTU exchange
+	err = bt_gatt_exchange_mtu(conn, &exchange_params);
+	if (err) {
+		LOG_WRN("MTU exchange failed (err %d)", err);
+	}
+
+	// Start GATT service discovery after MTU exchange
+	err = gatt_discover(conn);
+	if (err) {
+		LOG_WRN("GATT discovery failed (err %d)", err);
+	}
 }
 
-static int nus_client_init(void)
+
+static void disconnected(struct bt_conn *conn, uint8_t reason)
 {
-	int err;
-	struct bt_nus_client_init_param init = {
-		.cb = {
-			.received = ble_data_received,
-			.sent = ble_data_sent,
+	int conn_index = -1;
+
+	for (int i = 0; i < MAX_CONN; i++) {
+		if (default_conn[i] == conn) {
+			conn_index = i;
+			break;
 		}
-	};
-
-	err = bt_nus_client_init(&nus_client, &init);
-	if (err) {
-		LOG_ERR("NUS Client initialization failed (err %d)", err);
-		return err;
 	}
 
-	LOG_INF("NUS Client module initialized");
-	return err;
-}
-
-BT_SCAN_CB_INIT(scan_cb, scan_filter_match, NULL,
-		scan_connecting_error, scan_connecting);
-
-static int scan_init(void)
-{
-	int err;
-	struct bt_scan_init_param scan_init = {
-		.connect_if_match = 1,
-	};
-
-	bt_scan_init(&scan_init);
-	bt_scan_cb_register(&scan_cb);
-
-	err = bt_scan_filter_add(BT_SCAN_FILTER_TYPE_UUID, BT_UUID_NUS_SERVICE);
-	if (err) {
-		LOG_ERR("Scanning filters cannot be set (err %d)", err);
-		return err;
+	if (conn_index == -1) {
+		LOG_ERR("No matching connection found");
+		return;
 	}
 
-	err = bt_scan_filter_enable(BT_SCAN_UUID_FILTER, false);
-	if (err) {
-		LOG_ERR("Filters cannot be turned on (err %d)", err);
-		return err;
-	}
+	printk("Disconnected (reason: %u)\n", reason);
 
-	LOG_INF("Scan module initialized");
-	return err;
+	bt_conn_unref(default_conn[conn_index]);
+	default_conn[conn_index] = NULL;
 }
 
-
-static void auth_cancel(struct bt_conn *conn)
-{
-	char addr[BT_ADDR_LE_STR_LEN];
-
-	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
-
-	LOG_INF("Pairing cancelled: %s", addr);
-}
-
-
-static void pairing_complete(struct bt_conn *conn, bool bonded)
-{
-	char addr[BT_ADDR_LE_STR_LEN];
-
-	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
-
-	LOG_INF("Pairing completed: %s, bonded: %d", addr, bonded);
-}
-
-
-static void pairing_failed(struct bt_conn *conn, enum bt_security_err reason)
-{
-	char addr[BT_ADDR_LE_STR_LEN];
-
-	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
-
-	LOG_WRN("Pairing failed conn: %s, reason %d", addr, reason);
-}
-
-static struct bt_conn_auth_cb conn_auth_callbacks = {
-	.cancel = auth_cancel,
+static struct bt_conn_cb conn_callbacks = {
+	.connected = connected,
+	.disconnected = disconnected,
 };
 
-static struct bt_conn_auth_info_cb conn_auth_info_callbacks = {
-	.pairing_complete = pairing_complete,
-	.pairing_failed = pairing_failed
-};
+static void scan_filter_match(struct bt_scan_device_info *device_info,
+			      struct bt_scan_filter_match *filter_match,
+			      bool connectable)
+{
+	printk("Filter matched. Address: %s connectable: %d\n",
+	       bt_addr_le_str(&device_info->recv_info->addr), connectable);
+}
 
-int main(void)
+static void scan_connecting_error(struct bt_scan_device_info *device_info)
+{
+	printk("Connecting failed\n");
+}
+
+static void scan_connecting(struct bt_scan_device_info *device_info,
+			    struct bt_conn *conn)
+{
+	printk("Connecting...\n");
+}
+
+BT_SCAN_CB_INIT(scan_cb, scan_filter_match, NULL, scan_connecting_error, scan_connecting);
+
+void main(void)
 {
 	int err;
 
-	err = bt_conn_auth_cb_register(&conn_auth_callbacks);
-	if (err) {
-		LOG_ERR("Failed to register authorization callbacks.");
-		return 0;
-	}
-
-	err = bt_conn_auth_info_cb_register(&conn_auth_info_callbacks);
-	if (err) {
-		printk("Failed to register authorization info callbacks.\n");
-		return 0;
-	}
+	printk("Starting Bluetooth Central UART example\n");
 
 	err = bt_enable(NULL);
 	if (err) {
-		LOG_ERR("Bluetooth init failed (err %d)", err);
-		return 0;
-	}
-	LOG_INF("Bluetooth initialized");
-
-	if (IS_ENABLED(CONFIG_SETTINGS)) {
-		settings_load();
+		LOG_ERR("Bluetooth init failed (err %d)\n", err);
+		return;
 	}
 
 	err = uart_init();
-	if (err != 0) {
-		LOG_ERR("uart_init failed (err %d)", err);
-		return 0;
+	if (err) {
+		LOG_ERR("UART initialization failed (err: %d)\n", err);
+		return;
 	}
 
+	bt_conn_cb_register(&conn_callbacks);
 	bt_nus_client_cb_register(&nus_client[0], ble_data_received, ble_data_sent);
 
 	init_fifos_and_sems();
 
+	bt_scan_init(NULL);
+	bt_scan_cb_register(&scan_cb);
 
-	err = scan_init();
-	if (err != 0) {
-		LOG_ERR("scan_init failed (err %d)", err);
-		return 0;
+	struct bt_scan_init_param scan_init = {
+		.connect_if_match = 1,
+		.scan_param = NULL,
+		.conn_param = NULL
+	};
+
+	bt_scan_init(&scan_init);
+
+	err = bt_scan_filter_add(BT_SCAN_FILTER_TYPE_UUID, BT_UUID_NUS_SERVICE);
+	if (err) {
+		printk("Scanning filters cannot be set (err %d)\n", err);
+		return;
 	}
 
-	err = nus_client_init();
-	if (err != 0) {
-		LOG_ERR("nus_client_init failed (err %d)", err);
-		return 0;
+	err = bt_scan_filter_enable(BT_SCAN_UUID_FILTER, false);
+	if (err) {
+		printk("Filters cannot be turned on (err %d)\n", err);
+		return;
 	}
-
 
 	err = bt_scan_start(BT_SCAN_TYPE_SCAN_ACTIVE);
 	if (err) {
-		LOG_ERR("Scanning failed to start (err %d)", err);
-		return 0;
-	}
-
-	LOG_INF("Scanning successfully started");
-
-	struct uart_data_t nus_data = {
-		.len = 0,
-	};
-
-	for (;;) {
-
-		int conn_index = -1;
-		/* Wait indefinitely for data to be sent over Bluetooth */
-		struct uart_data_t *buf = k_fifo_get(&fifo_uart_tx_data[0], K_NO_WAIT);
-
-		for (int i = 0; i < MAX_CONN; i++) {
-			struct uart_data_t *buf = k_fifo_get(&fifo_uart_rx_data[i], K_NO_WAIT);
-			if (buf != NULL) {
-				conn_index = i;
-				break;
-			}
-		}
-
-		if (conn_index == -1) {
-			k_sleep(K_MSEC(100));
-			k_free(buf);
-			continue;
-		}
-		
-		int plen = MIN(sizeof(nus_data.data) - nus_data.len, buf->len);
-		int loc = 0;
-
-		while (plen > 0) {
-			memcpy(&nus_data.data[nus_data.len], &buf->data[loc], plen);
-			nus_data.len += plen;
-			loc += plen;
-			if (nus_data.len >= sizeof(nus_data.data) ||
-			   (nus_data.data[nus_data.len - 1] == '\n') ||
-			   (nus_data.data[nus_data.len - 1] == '\r')) {
-				err = bt_nus_client_send(&nus_client[conn_index], nus_data.data, nus_data.len);
-				if (err) {
-					LOG_WRN("Failed to send data over BLE connection"
-						"(err %d)", err);
-				}
-
-				err = k_sem_take(&nus_write_sem[conn_index], NUS_WRITE_TIMEOUT);
-				if (err) {
-					LOG_WRN("NUS send timeout");
-				}
-
-				nus_data.len = 0;
-			}
-
-			plen = MIN(sizeof(nus_data.data), buf->len - loc);
-		}
-
-		k_free(buf);
+		printk("Scanning failed to start (err %d)\n", err);
+		return;
 	}
 }
