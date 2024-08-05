@@ -697,7 +697,7 @@ int main(void)
 
 		int conn_index = -1;
 		/* Wait indefinitely for data to be sent over Bluetooth */
-		struct uart_data_t *buf = k_fifo_get(&fifo_uart_tx_data[0], K_NO_WAIT);
+		struct uart_data_t *buf = k_fifo_get(&fifo_uart_tx_data[0], K_MSEC(10));
 
 		for (int i = 0; i < MAX_CONN; i++) {
 			struct uart_data_t *buf = k_fifo_get(&fifo_uart_rx_data[i], K_NO_WAIT);
