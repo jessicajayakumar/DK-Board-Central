@@ -40,7 +40,7 @@
 #include <zephyr/logging/log.h>
 
 #define LOG_MODULE_NAME central_uart
-LOG_MODULE_REGISTER(LOG_MODULE_NAME, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(LOG_MODULE_NAME);
 
 /* UART payload buffer element size. */
 #define UART_BUF_SIZE 20
@@ -910,7 +910,7 @@ int main(void)
 		}
 	}
 
-	printk("Starting Bluetooth Central UART example\n");
+	// printk("Starting Bluetooth Central UART example\n");
 
 
 	err = bt_scan_start(BT_SCAN_TYPE_SCAN_ACTIVE);

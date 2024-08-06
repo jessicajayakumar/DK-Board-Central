@@ -82,7 +82,7 @@ def filter_data(file_path,file_1,file_2):
         with open(file_1, 'w') as file1:
             with open(file_2, 'w') as file2:
                 for i in range(0, len(data),2):
-                    if data[i] == 1:
+                    if data[i] == 48:
                         file1.write(f"{data[i+1]}\n")
                     else:
                         file2.write(f"{data[i+1]}\n")
