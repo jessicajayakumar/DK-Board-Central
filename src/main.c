@@ -41,9 +41,9 @@ LOG_MODULE_REGISTER(LOG_MODULE_NAME, LOG_LEVEL_DBG);
 
 K_SEM_DEFINE(nus_write_sem, 0, 1);
 
-#define MAX_CONNECTIONS 3
+#define MAX_CONNECTIONS 2
 
-static struct bt_conn *default_conn[MAX_CONNECTIONS]= { NULL, NULL,NULL };
+static struct bt_conn *default_conn[MAX_CONNECTIONS]= {NULL, NULL};
 static struct bt_nus_client nus_client[MAX_CONNECTIONS];
 
 //FreeBot Identity 23: E7:B0:4C:D9:30:3C
