@@ -1,0 +1,8 @@
+8/8/24
+
+The data from uart is sent as a char instead of a decimal, which doesnt affect our ability to transmit, but will intefere when we try to log to voltage
+at the same time as sending command - need to reqrite the DKB code so that it send it decimals as decimals and not chars (mult_nus_send func will need
+to change)
+
+Another issue is that the FB freezes after a certain number of transmissions. I might not be handling the buffer proeperly, so once the dataa is handled
+the buffer needs to be freed, and a non blocking method should be used for such processes
