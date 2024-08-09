@@ -6,3 +6,73 @@ to change)
 
 Another issue is that the FB freezes after a certain number of transmissions. I might not be handling the buffer proeperly, so once the dataa is handled
 the buffer needs to be freed, and a non blocking method should be used for such processes
+
+
+/* Enum for different motion types */
+typedef enum {
+    STOP = 0,
+    FORWARD,
+    TURN_LEFT,
+    TURN_RIGHT,
+} motion_t;
+motion_t current_motion;
+uint32_t last_motion_update = 0;
+uint32_t timesToTurn = 0;
+#define STRAIGHT_TIME 240
+#define TURN_RAND_TIME 80
+// Function to handle motion.
+void set_motion(motion_t new_motion){
+    // Only take an an action if the motion is being changed.
+    if (current_motion != new_motion){
+        current_motion = new_motion;
+        
+        if (current_motion == STOP){
+            set_motors(0, 0);
+        }
+        else if (current_motion == FORWARD){
+            spinup_motors();
+            set_motors(kilo_straight_left, kilo_straight_right);
+        }
+        else if (current_motion == TURN_LEFT){
+            spinup_motors();
+            set_motors(kilo_turn_left, 0);
+        }
+        else if (current_motion == TURN_RIGHT){
+            spinup_motors();
+            set_motors(0, kilo_turn_right);
+        }
+    }
+}
+
+Mohamed S Talamali, Yesterday 10:46
+//Decide a random motion
+void set_random_motion(){
+   switch( current_motion ) {
+   case TURN_LEFT:
+   case TURN_RIGHT:
+       if( kilo_ticks > last_motion_ticks + timesToTurn ) {
+           /* start moving forward */
+           last_motion_ticks = kilo_ticks;
+           set_motion(FORWARD);
+//           if (kilo_uid == 8) { printf("Go straight (%d): %d \n", kilo_ticks, timesToTurn); }
+       }
+       break;
+   case FORWARD:
+       if( kilo_ticks > last_motion_ticks + STRAIGHT_TIME ) {
+           /* perform a radnom turn */
+//           if (kilo_uid == 8) { printf("Turn (%d): %d \n", kilo_ticks, timesToTurn); }
+           last_motion_ticks = kilo_ticks;
+           if( rand()%2 ) {
+               set_motion(TURN_LEFT);
+           }
+           else {
+               set_motion(TURN_RIGHT);
+           }
+           timesToTurn = (rand()%TURN_RAND_TIME) + 1;
+       }
+       break;
+   case STOP:
+   default:
+       set_motion(STOP);
+   }
+}

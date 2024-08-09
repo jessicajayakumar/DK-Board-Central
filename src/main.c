@@ -79,7 +79,7 @@ BT_CONN_CTX_DEF(conns, CONFIG_BT_MAX_CONN, sizeof(struct bt_nus_client));
 static bool routedMessage = false;
 static bool messageStart = true;
 
-#define ROUTED_MESSAGE_CHAR '*'
+// #define ROUTED_MESSAGE_CHAR '*'
 #define BROADCAST_INDEX 99
 
 static void ble_data_sent(struct bt_nus_client *nus,uint8_t err, const uint8_t *const data, uint16_t len)
@@ -106,7 +106,7 @@ static void ble_data_sent(struct bt_nus_client *nus,uint8_t err, const uint8_t *
 static int multi_nus_send(struct uart_data_t *buf){
 	
 	int err = 0;
-	char * message = buf->data;
+	uint8_t *message = buf->data;
 	int length = buf->len;
 	
 	static bool broadcast = false;
@@ -122,14 +122,14 @@ static int multi_nus_send(struct uart_data_t *buf){
 		messageStart = false;
 
 		/*Check if it's a routed message*/
-		if (message[0] == ROUTED_MESSAGE_CHAR) {
+		if ((message[1] != 0)) {
 			
 			routedMessage = true;
 			/*Determine who the intended recipient is*/
 			char str[2];
-			str[0] = message[1];
-			str[1] = message[2];
-			nus_index = atoi(str);
+			str[0] = message[0];
+			str[1] = message[1];
+			nus_index = str;
 
 			/*Is this a number that makes sense?*/
 			if ((nus_index >= 0) && (nus_index < num_nus_conns)){
@@ -137,12 +137,12 @@ static int multi_nus_send(struct uart_data_t *buf){
 
 				/*Move the data buffer pointer to after the recipient info and 
 				shorten the length*/
-				message =  &message[3];
-				length = length - 3;
+				message =  &message[2];
+				length = length - 2;
 			} else if (nus_index == BROADCAST_INDEX) {
 				broadcast = true;
-				message =  &message[3];
-				length = length - 3;
+				message =  &message[2];
+				length = length - 2;
 			}
 		} else {
 			broadcast = true;
@@ -278,7 +278,7 @@ static uint8_t ble_data_received(struct bt_nus_client *nus,const uint8_t *const 
 		/*	Routed messages. See the comments above. 
 		*	Check for *, if there's a star, send it over to the multi-nus send function
 		*/
-		if (( data[0] == '*') || (routedMessage == true) ) {
+		if (( (data[0] == 0) && (data[1]==0))|| (routedMessage == true) ) {
 			multi_nus_send(tx);
 		}
 
