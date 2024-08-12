@@ -15,11 +15,14 @@ typedef enum {
     TURN_LEFT,
     TURN_RIGHT,
 } motion_t;
+
 motion_t current_motion;
 uint32_t last_motion_update = 0;
 uint32_t timesToTurn = 0;
 #define STRAIGHT_TIME 240
 #define TURN_RAND_TIME 80
+
+
 // Function to handle motion.
 void set_motion(motion_t new_motion){
     // Only take an an action if the motion is being changed.
@@ -44,7 +47,7 @@ void set_motion(motion_t new_motion){
     }
 }
 
-Mohamed S Talamali, Yesterday 10:46
+
 //Decide a random motion
 void set_random_motion(){
    switch( current_motion ) {
@@ -54,13 +57,11 @@ void set_random_motion(){
            /* start moving forward */
            last_motion_ticks = kilo_ticks;
            set_motion(FORWARD);
-//           if (kilo_uid == 8) { printf("Go straight (%d): %d \n", kilo_ticks, timesToTurn); }
        }
        break;
    case FORWARD:
        if( kilo_ticks > last_motion_ticks + STRAIGHT_TIME ) {
            /* perform a radnom turn */
-//           if (kilo_uid == 8) { printf("Turn (%d): %d \n", kilo_ticks, timesToTurn); }
            last_motion_ticks = kilo_ticks;
            if( rand()%2 ) {
                set_motion(TURN_LEFT);
@@ -76,3 +77,95 @@ void set_random_motion(){
        set_motion(STOP);
    }
 }
+
+
+
+
+1] <dbg> central_uart: uart_cb: UART_TX_DONE
+[00:00:20.015,106] <inf> central_uart: Byte 0: 0x30 (decimal: 48)
+[00:00:20.015,136] <inf> central_uart: Byte 1: 0x22 (decimal: 34)
+[00:00:20.015,167] <inf> central_uart: Received data in uart as raw integer: 48
+[00:00:20.015,167] <inf> central_uart: Received data in uart as raw integer: 34
+[00:00:20.015,380] <dbg> central_uart: uart_cb: UART_TX_DONE
+[00:00:20.114,532] <inf> central_uart: Byte 0: 0x30 (decimal: 48)
+[00:00:20.114,562] <inf> central_uart: Byte 1: 0x22 (decimal: 34)
+[00:00:20.114,593] <inf> central_uart: Received data in uart as raw integer: 48
+[00:00:20.114,593] <inf> central_uart: Received data in uart as raw integer: 34
+[00:00:20.114,837] <dbg> central_uart: uart_cb: UART_TX_DONE
+[00:00:20.115,112] <inf> central_uart: Byte 0: 0x30 (decimal: 48)
+[00:00:20.115,142] <inf> central_uart: Byte 1: 0x21 (decimal: 33)
+[00:00:20.115,142] <inf> central_uart: Received data in uart as raw integer: 48
+[00:00:20.115,173] <inf> central_uart: Received data in uart as raw integer: 33
+[00:00:20.115,386] <dbg> central_uart: uart_cb: UART_TX_DONE
+[00:00:20.214,538] <inf> central_uart: Byte 0: 0x30 (decimal: 48)
+[00:00:20.214,569] <inf> central_uart: Byte 1: 0x21 (decimal: 33)
+[00:00:20.214,569] <inf> central_uart: Received data 0"0"in uart as raw integer: 48
+[00:00:20.214,599] <inf> central_uart: Received data in uart as raw integer: 33
+[00:00:20.214,843] <dbg> central_uart: uart_cb: UART_TX_DONE
+[00:00:20.215,057] <inf> central_uart: Byte 0: 0x30 (decimal: 48)
+[00:00:20.215,087] <inf> central_uart: Byte 1: 0x22 (decimal: 34)
+[00:00:20.215,118] <inf> central_uart: Received data in uart as raw integer: 48
+[00:00:20.215,118] <inf> central_uart: Received data in uart as raw integer: 34
+[00:00:20.215,3320!0"] <dbg> central_uart: uart_cb: UART_TX_DONE
+[00:00:20.264,526] <inf> central_uart: Byte 0: 0x30 (decimal: 48)
+[00:00:20.264,556] <inf> central_uart: Byte 1: 0x22 (decimal: 34)
+[00:00:20.264,587] <inf> central_uart: Received data in uart as raw integer: 48
+[00:00:20.264,587] <inf> central_uart: Received data in uart as raw integer: 34
+[00:00:20.264,831] <dbg> central_uart: uart_cb: UART_TX_DONE
+[00:00:20.265,075] <inf> central_uart: Byte 0: 0x30 (decimal: 48)
+[00:00:20.265,075] <inf> central_uart: Byte 1: 0x22 (decimal: 34)
+[00:00:20.265,106] <inf> central_uart: Received data in uart as raw integer: 48
+[00:00:20.265,106] <inf> central_uart: Received data in uart as raw integer: 34
+[00:00:20.265,319] <dbg> central_uart: uart_cb: UART_TX_DONE
+[00:00:20.314,544] <inf> central_uart: Byte 0: 0x30 (decimal: 48)
+[00:00:20.314,544] <inf> central_uart: Byte 1: 0x21 (decimal: 33)
+[00:00:20.314,575] <inf> central_uart: Received data in uart as raw integer:0"0" 48
+[00:00:20.314,605] <inf> central_uart: Received data in uart as raw integer: 33
+[00:00:20.314,849] <dbg> central_uart: uart_cb: UART_TX_DONE
+[00:00:20.315,124] <inf> central_uart: Byte 0: 0x30 (decimal: 48)
+[00:00:20.315,124] <inf> central_uart: Byte 1: 0x22 (decimal: 34)
+[00:00:20.315,155] <inf> central_uart: Received data in uart as raw integer: 48
+[00:00:20.315,155] <inf> central_uart: Received data in uart as raw integer: 34
+[00:00:20.315,368] <dbg> central_uart: uart_cb: UART_TX_DONE
+[00:00:20.414,550] <inf> central_uart: Byte 0: 0x30 (decimal: 48)
+[00:00:20.414,550] <inf> central_uart: Byte 1: 0x22 (decimal: 34)
+[00:00:20.414,581] <inf> central_uart: Received data in uart as raw integer: 48
+[00:00:20.414,611] <inf> central_uart: Received data in uart as raw integer: 34
+[00:00:20.414,825] <dbg> central_uart: uart_cb: UART_TX_DONE
+[00:00:20.415,100] <inf> central_uart: Byte 0: 0x30 (decimal: 48)
+[00:00:20.415,130] <in0"0"f> central_uart: Byte 1: 0x22 (decimal: 34)
+[00:00:20.415,161] <inf> central_uart: Received data in uart as raw integer: 48
+[00:00:20.415,161] <inf> central_uart: Received data in uart as raw integer: 34
+[00:00:20.415,374] <dbg> central_uart: uart_cb: UART_TX_DONE
+[00:00:20.514,526] <inf> central_uart: Byte 0: 0x30 (decimal: 48)
+[00:00:20.514,556] <inf> central_uart: Byte 1: 0x22 (decimal: 34)
+[00:00:20.514,587] <inf> central_uart: Received data in u0"0"art as raw integer: 48
+[00:00:20.514,587] <inf> central_uart: Received data in uart as raw integer: 34
+[00:00:20.514,831] <dbg> central_uart: uart_cb: UART_TX_DONE
+[00:00:20.515,075] <inf> central_uart: Byte 0: 0x30 (decimal: 48)
+[00:00:20.515,075] <inf> central_uart: Byte 1: 0x22 (decimal: 34)
+[00:00:20.515,106] <inf> central_uart: Received data in uart as raw integer: 48
+[00:00:20.515,136] <inf> central_uart: Received data in uart as raw integer: 34
+[00:00:20.515,350]0!0" <dbg> central_uart: uart_cb: UART_TX_DONE
+[00:00:20.564,544] <inf> central_uart: Byte 0: 0x30 (decimal: 48)
+[00:00:20.564,544] <inf> central_uart: Byte 1: 0x22 (decimal: 34)
+[00:00:20.564,575] <inf> central_uart: Received data in uart as raw integer: 48
+[00:00:20.564,605] <inf> central_uart: Received data in uart as raw integer: 34
+[00:00:20.564,819] <dbg> central_uart: uart_cb: UART_TX_DONE
+[00:00:20.565,063] <inf> central_uart: Byte 0: 0x30 (decimal: 48)
+[00:00:20.565,093] <inf> central_uart: Byte 1: 0x22 (decimal: 34)
+[00:00:20.565,124] <inf> central_uart: Received data in uart as raw integer: 48
+[00:00:20.565,124] <inf> central_uart: Received data in uart as raw integer: 34
+[00:00:20.565,338] <dbg> central_uart: uart_cb: UART_TX_DONE
+[00:00:20.614,532] <inf> central_uart: Byte 0: 0x30 (decimal: 48)
+[00:00:20.614,562] <inf> central_uart: Byte 1: 0x21 (decimal: 33)
+[00:00:20.614,593] <inf> central_uart: Received data in uart as raw integer: 48
+0!0![00:00:20.614,593] <inf> central_uart: Received data in uart as raw integer: 33
+[00:00:20.614,837] <dbg> central_uart: uart_cb: UART_TX_DONE
+[00:00:20.615,112] <inf> central_uart: Byte 0: 0x30 (decimal: 48)
+[00:00:20.615,142] <inf> central_uart: Byte 1: 0x22 (decimal: 34)
+[00:00:20.615,142] <inf> central_uart: Received data in uart as raw integer: 48
+[00:00:20.615,173] <inf> central_uart: Received data in uart as raw integer: 34
+[00:00:20.615,356] <dbg> central_uart: uart_cb: UART_TX_DONE
+[00:00:20.714,538] <inf> central_uart: Byte 0: 0x30 (decimal: 48)
+[00:00:20.714,569] <inf> centr

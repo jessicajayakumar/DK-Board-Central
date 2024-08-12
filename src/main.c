@@ -106,7 +106,7 @@ static void ble_data_sent(struct bt_nus_client *nus,uint8_t err, const uint8_t *
 static int multi_nus_send(struct uart_data_t *buf){
 	
 	int err = 0;
-	uint8_t *message = 0012;
+	uint8_t *message = buf->data;
 	int length = buf->len;
 	
 	static bool broadcast = false;
@@ -273,12 +273,12 @@ static uint8_t ble_data_received(struct bt_nus_client *nus,const uint8_t *const 
 		}
 
 		for (size_t i = 0; i < tx->len; i++) {
-			LOG_INF("Received data in uart as raw integer: %d", tx->data[i]);	
+			LOG_INF("Received data as raw integer: %c", tx->data[i]);	
 		}
 		/*	Routed messages. See the comments above. 
 		*	Check for *, if there's a star, send it over to the multi-nus send function
 		*/
-		if (( (data[0] == 0) && (data[1]==0))|| (routedMessage == true) ) {
+		if (( (data[0] == 0) && (data[1]==0)) || (routedMessage == true) ) {
 			multi_nus_send(tx);
 		}
 
@@ -439,15 +439,6 @@ static void uart_work_handler(struct k_work *item)
 
 	uart_rx_enable(uart, buf->data, sizeof(buf->data), UART_RX_TIMEOUT);
 }
-
-//WRC
-// static bool uart_test_async_api(const struct device *dev)
-// {
-// 	const struct uart_driver_api *api =
-// 			(const struct uart_driver_api *)dev->api;
-
-// 	return (api->callback_set != NULL);
-// }
 
 static int uart_init(void)
 {
@@ -720,11 +711,11 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 	bt_conn_unref(conn);
 	default_conn = NULL;
 
-	err = bt_scan_start(BT_SCAN_TYPE_SCAN_ACTIVE);
-	if (err) {
-		LOG_ERR("Scanning failed to start (err %d)",
-			err);
-	}
+	// err = bt_scan_start(BT_SCAN_TYPE_SCAN_ACTIVE);
+	// if (err) {
+	// 	LOG_ERR("Scanning failed to start (err %d)",
+	// 		err);
+	// }
 }
 
 static void security_changed(struct bt_conn *conn, bt_security_t level,
@@ -771,26 +762,6 @@ static void scan_connecting(struct bt_scan_device_info *device_info,
 	default_conn = bt_conn_ref(conn);
 }
 
-// static int nus_client_init(void)
-// {
-// 	int err;
-// 	struct bt_nus_client_init_param init = {
-// 		.cb = {
-// 			.received = ble_data_received,
-// 			.sent = ble_data_sent,
-// 		}
-// 	};
-
-// 	err = bt_nus_client_init(&nus_client, &init);
-// 	if (err) {
-// 		LOG_ERR("NUS Client initialization failed (err %d)", err);
-// 		return err;
-// 	}
-
-// 	LOG_INF("NUS Client module initialized");
-// 	return err;
-// }
-
 BT_SCAN_CB_INIT(scan_cb, scan_filter_match, NULL,
 		scan_connecting_error, scan_connecting);
 
@@ -829,18 +800,6 @@ static void auth_cancel(struct bt_conn *conn)
 
 	LOG_INF("Pairing cancelled: %s", addr);
 }
-
-
-// static void pairing_confirm(struct bt_conn *conn)
-// {
-// 	char addr[BT_ADDR_LE_STR_LEN];
-
-// 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
-
-// 	bt_conn_auth_pairing_confirm(conn);
-
-// 	LOG_INF("Pairing confirmed: %s", addr);
-// }
 
 
 static void pairing_complete(struct bt_conn *conn, bool bonded)
@@ -910,7 +869,7 @@ int main(void)
 		}
 	}
 
-	// printk("Starting Bluetooth Central UART example\n");
+	printk("Starting Bluetooth Central UART example\n");
 
 
 	err = bt_scan_start(BT_SCAN_TYPE_SCAN_ACTIVE);
