@@ -83,7 +83,7 @@ def filter_data(file_path,file_1,file_2):
         with open(file_1, 'w') as file1:
             with open(file_2, 'w') as file2:
                 for i in range(0, len(data),2):
-                    if data[i] == 48:
+                    if data[i] == 49:
                         file1.write(f"{data[i+1]}\n")
                     else:
                         file2.write(f"{data[i+1]}\n")
@@ -109,7 +109,7 @@ def plot_data(data, interval=1):
     plt.show()
 
 def main():
-    serial_port = '/dev/ttyACM1'  # Replace with your port
+    serial_port = '/dev/ttyACM0'  # Replace with your port
     baud_rate = 115200
     log_file_path = 'serial_log.txt'
     file_1='freebot_1.txt'
@@ -123,12 +123,12 @@ def main():
 
     # If you don't need to wait for the end of the boot message, you can remove this block 
     # Wait for the end of the boot message
-    print("Waiting for the end of the boot message...")
-    if not wait_for_end_of_boot_message(ser, end_marker):
-        print("End marker not found. Exiting.")
-        ser.close()
-        return
-    print("End marker found. Logging started.")
+    # print("Waiting for the end of the boot message...")
+    # if not wait_for_end_of_boot_message(ser, end_marker):
+    #     print("End marker not found. Exiting.")
+    #     ser.close()
+    #     return
+    print("Logging started.")
 
     # Open the file to log the data
     with open(log_file_path, 'w') as log_file:
