@@ -122,7 +122,7 @@ static int multi_nus_send(struct uart_data_t *buf){
 		messageStart = false;
 
 		/*Check if it's a routed message*/
-		if ((message[1] != 0)) {
+		if ((message[0] != 0)) {
 			
 			routedMessage = true;
 			/*Determine who the intended recipient is*/
@@ -278,7 +278,7 @@ static uint8_t ble_data_received(struct bt_nus_client *nus,const uint8_t *const 
 		/*	Routed messages. See the comments above. 
 		*	Check for *, if there's a star, send it over to the multi-nus send function
 		*/
-		if (( (data[0] == 0) && (data[1]==0)) || (routedMessage == true) ) {
+		if (( (data[0] == 0) || (data[0]==9)) || (routedMessage == true) ) {
 			multi_nus_send(tx);
 		}
 
