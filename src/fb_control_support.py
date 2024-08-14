@@ -16,6 +16,13 @@ import serial
 
 _debug = True # False to eliminate debug printing from callback functions.
 
+serial_port = '/dev/ttyACM1'  # Replace with your port
+baud_rate = 115200
+log_file_path = 'serial_log.txt'
+file_1='freebot_1.txt'
+file_2='freebot_2.txt'
+end_marker = b'\n'  # ASCII LF character
+
 def main(*args):
     '''Main entry point for the application.'''
     global root
@@ -26,53 +33,6 @@ def main(*args):
     _top1 = root
     _w1 = fb_control.Toplevel1(_top1)
     root.mainloop()
-
-    serial_port = '/dev/ttyACM1'  # Replace with your port
-    baud_rate = 115200
-    log_file_path = 'serial_log.txt'
-    file_1='freebot_1.txt'
-    file_2='freebot_2.txt'
-    end_marker = b'\n'  # ASCII LF character
-
-    # Open the serial port
-    ser = open_serial_port(serial_port, baud_rate)
-    if ser is None:
-        return
-
-    # If you don't need to wait for the end of the boot message, you can remove this block 
-    # Wait for the end of the boot message
-    print("Waiting for the end of the boot message...")
-    if not wait_for_end_of_boot_message(ser, end_marker):
-        print("End marker not found. Exiting.")
-        ser.close()
-        return
-    print("End marker found. Logging started.")
-
-    # Open the file to log the data
-    with open(log_file_path, 'w') as log_file:
-        try:
-            while True:
-                byte_data = read_from_serial(ser)
-                if byte_data:
-                    ascii_decimal = convert_to_ascii_decimal(byte_data)
-                    log_to_file(log_file, ascii_decimal)
-        except KeyboardInterrupt:
-            print("Logging stopped by user.")
-        finally:
-            ser.close()
-            print("Serial port closed.")
-
-    filter_data(log_file_path,file_1,file_2)
-
-    file_path_1= 'freebot_1.txt'  
-    data_1= read_data_from_file(file_path_1)
-    if data_1:
-        plot_data(data_1)
-        
-    file_path_2= 'freebot_2.txt'  
-    data_2= read_data_from_file(file_path_2)
-    if data_2:
-        plot_data(data_2)
 
 
 def open_serial_port(port, baud_rate):
@@ -180,8 +140,71 @@ def plot_data(data, interval=1):
     plt.grid(True)
     plt.show()
 
+def FB_stop():
+    ser= open_serial_port(serial_port, baud_rate)
+    
+    ser.write(b'99a')
+
+def FB_start():
+    
+    ser = open_serial_port(serial_port, baud_rate)
+    
+    ser.write(b'99b')
+
+def FB_V_stop():
+    ser= open_serial_port(serial_port, baud_rate)
+    ser.write(b'99c')
+
+def FB_V_start():
+    ser= open_serial_port(serial_port, baud_rate)
+    ser.write(b'99d')
+
+
+
+
+def DKB_main():
+    # Open the serial port
+    ser = open_serial_port(serial_port, baud_rate)
+    if ser is None:
+        return
+
+    # If you don't need to wait for the end of the boot message, you can remove this block 
+    # Wait for the end of the boot message
+    print("Waiting for the end of the boot message...")
+    if not wait_for_end_of_boot_message(ser, end_marker):
+        print("End marker not found. Exiting.")
+        ser.close()
+        return
+    print("End marker found. Logging started.")
+
+    # Open the file to log the data
+    with open(log_file_path, 'w') as log_file:
+        try:
+            while True:
+                byte_data = read_from_serial(ser)
+                if byte_data:
+                    ascii_decimal = convert_to_ascii_decimal(byte_data)
+                    log_to_file(log_file, ascii_decimal)
+        except KeyboardInterrupt:
+            print("Logging stopped by user.")
+        finally:
+            ser.close()
+            print("Serial port closed.")
+
+    filter_data(log_file_path,file_1,file_2)
+
+    file_path_1= 'freebot_1.txt'  
+    data_1= read_data_from_file(file_path_1)
+    if data_1:
+        plot_data(data_1)
+        
+    file_path_2= 'freebot_2.txt'  
+    data_2= read_data_from_file(file_path_2)
+    if data_2:
+        plot_data(data_2)
+
 if __name__ == '__main__':
-    main()
+    DKB_main()
     
 
 
