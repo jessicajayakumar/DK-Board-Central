@@ -38,14 +38,12 @@ def main(*args):
 class DKB:
 
     def __init__(self,master=None):
-        from fb_new import Toplevel1
-        self.TL=Toplevel1()
-        # Open the serial port
+    
         self.ser = self.open_serial_port(serial_port, baud_rate)
         if self.ser is None:
             return
 
-    def open_serial_port(port, baud_rate):
+    def open_serial_port(self,port, baud_rate):
         try:
             ser = serial.Serial(port, baud_rate)
             print(f"Opened serial port {port} with baud rate {baud_rate}")
@@ -54,7 +52,7 @@ class DKB:
             print(f"Error opening serial port: {e}")
             return None
 
-    def read_from_serial(ser):
+    def read_from_serial(self,ser):
         try:
             byte_data = ser.read(1)
             return byte_data

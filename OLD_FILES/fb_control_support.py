@@ -10,7 +10,7 @@ import tkinter as tk
 import tkinter.ttk as ttk
 from tkinter.constants import *
 
-import fb_control
+import OLD_FILES.fb_control as fb_control
 import matplotlib.pyplot as plt
 import serial
 

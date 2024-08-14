@@ -87,11 +87,11 @@ class Toplevel1:
 
         self.v_stop = tk.Button(self.top)
         self.v_stop.place(relx=0.55, rely=0.697, height=131, width=231)
-        self.v_stop.configure(activebackground="#d9d9d9",font="-family {DejaVu Sans} -size 10",text='''Voltage Send OFF''',command=lambda: self.voltage_send_off)
+        self.v_stop.configure(activebackground="#d9d9d9",font="-family {DejaVu Sans} -size 10",text='''Voltage Send OFF''')
 
         self.v_start = tk.Button(self.top)
         self.v_start.place(relx=0.55, rely=0.404, height=131, width=231)
-        self.v_start.configure(activebackground="#d9d9d9",font="-family {DejaVu Sans} -size 10",text='''Voltage Send ON''',command=lambda: self.voltage_send_on)
+        self.v_start.configure(activebackground="#d9d9d9",font="-family {DejaVu Sans} -size 10",text='''Voltage Send ON''')
 
     def set_recipient(self,recipient):
         self.recipient = recipient

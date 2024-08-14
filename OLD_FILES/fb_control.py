@@ -13,7 +13,7 @@ import os.path
 
 _location = os.path.dirname(__file__)
 
-import fb_control_support
+import OLD_FILES.fb_control_support as fb_control_support
 
 _bgcolor = '#d9d9d9'
 _fgcolor = '#000000'
