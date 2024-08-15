@@ -7,8 +7,8 @@
 /** @file
  *  @brief Nordic UART Service Client sample
  */
-#include "uart_async_adapter.h"//WRC
-#include <zephyr/usb/usb_device.h> //WRC
+#include "uart_async_adapter.h"
+#include <zephyr/usb/usb_device.h> 
 #include <errno.h> 
 #include <zephyr/kernel.h>
 #include <zephyr/sys/byteorder.h> 
@@ -42,7 +42,7 @@
 #define LOG_MODULE_NAME central_uart
 LOG_MODULE_REGISTER(LOG_MODULE_NAME);
 
-/* UART payload buffer element size. */
+
 #define UART_BUF_SIZE 20
 
 #define KEY_PASSKEY_ACCEPT DK_BTN1_MSK
@@ -62,7 +62,7 @@ struct uart_data_t {
 	uint8_t  data[UART_BUF_SIZE];
 	uint16_t len;
 };
-//WRC
+
 #if CONFIG_BT_NUS_UART_ASYNC_ADAPTER
 UART_ASYNC_ADAPTER_INST_DEFINE(async_adapter);
 #else
@@ -79,7 +79,7 @@ BT_CONN_CTX_DEF(conns, CONFIG_BT_MAX_CONN, sizeof(struct bt_nus_client));
 static bool routedMessage = false;
 static bool messageStart = true;
 
-// #define ROUTED_MESSAGE_CHAR '*'
+
 #define BROADCAST_INDEX 99
 
 static void ble_data_sent(struct bt_nus_client *nus,uint8_t err, const uint8_t *const data, uint16_t len)
@@ -95,14 +95,6 @@ static void ble_data_sent(struct bt_nus_client *nus,uint8_t err, const uint8_t *
 	}
 }
 
-/*	New function for sending data into the multi-NUS
-* 	Extensions to the behavior of message routing can be made here.
-*	If the first character is *, this indicates a routed message.
-*	If the first character is not *, then this is a broadcast message sent to all peers.
-* 	If the message is routed, the two characters after the * will be read as the peer number
-*	and the message will be sent only to that peer. Numbers must be written as two digits, i.e 01 for 1.
-*	The default behavior will be to broadcast in the case of failure of message parsing.
-*/
 static int multi_nus_send(struct uart_data_t *buf){
 	
 	int err = 0;
@@ -114,29 +106,27 @@ static int multi_nus_send(struct uart_data_t *buf){
 
 	LOG_INF("Multi-Nus Send");
 
-	/*How many connections are there in the Connection Context Library?*/
+
 	const size_t num_nus_conns = bt_conn_ctx_count(&conns_ctx_lib);
 
-	/*Handle the routing of the message only at the beginning of the message*/
+
 	if (messageStart) {
 		messageStart = false;
 
-		/*Check if it's a routed message*/
+
 		if ((message[0] != 0)) {
 			
 			routedMessage = true;
-			/*Determine who the intended recipient is*/
 			char str[2];
 			str[0] = message[0];
 			str[1] = message[1];
 			nus_index = atoi(str);
 
-			/*Is this a number that makes sense?*/
+		
 			if ((nus_index >= 0) && (nus_index < num_nus_conns)){
 				broadcast = false;
 
-				/*Move the data buffer pointer to after the recipient info and 
-				shorten the length*/
+			
 				message =  &message[2];
 				length = length - 2;
 			} else if (nus_index == BROADCAST_INDEX) {
@@ -150,10 +140,6 @@ static int multi_nus_send(struct uart_data_t *buf){
 	}
 
 
-
-	/*	If it's a routed message, send it to that guy. 
-	*	If it's not, broadcast it to everyone.
-	*/
 	if (broadcast == false){
 		const struct bt_conn_ctx *ctx =
 				bt_conn_ctx_get_by_id(&conns_ctx_lib, nus_index);
@@ -187,7 +173,7 @@ static int multi_nus_send(struct uart_data_t *buf){
 
 		}
 
-	}else{//Broadcast message
+	}else{
 		LOG_INF("Broadcast");
 		for (size_t i = 0; i < num_nus_conns; i++) {
 			const struct bt_conn_ctx *ctx =
@@ -228,11 +214,7 @@ static int multi_nus_send(struct uart_data_t *buf){
 	return err;
 }
 
-/*	This function has been updated to add the ability for a peer to route a message by
-*	appending a '*' as in the multi-NUS send function. So a peer could send the message
-*	*00 to send a message to peer 0. If the peer sends a *99, that message is broadcast to 
-*	all peers
-*/
+
 
 static uint8_t ble_data_received(struct bt_nus_client *nus,const uint8_t *const data, uint16_t len)
 {
@@ -251,7 +233,7 @@ static uint8_t ble_data_received(struct bt_nus_client *nus,const uint8_t *const 
 			return BT_GATT_ITER_CONTINUE;
 		}
 
-		/* Keep the last byte of TX buffer for potential LF char. */
+		
 		size_t tx_data_size = sizeof(tx->data) - 1;
 
 		if ((len - pos) > tx_data_size) {
@@ -264,9 +246,6 @@ static uint8_t ble_data_received(struct bt_nus_client *nus,const uint8_t *const 
 
 		pos += tx->len;
 
-		/* Append the LF character when the CR character triggered
-		 * transmission from the peer.
-		 */
 		if ((pos == len) && (data[len - 1] == '\r')) {
 			tx->data[tx->len] = '\n';
 			tx->len++;
@@ -275,9 +254,7 @@ static uint8_t ble_data_received(struct bt_nus_client *nus,const uint8_t *const 
 		for (size_t i = 0; i < tx->len; i++) {
 			LOG_INF("Received data as raw integer: %c", tx->data[i]);	
 		}
-		/*	Routed messages. See the comments above. 
-		*	Check for *, if there's a star, send it over to the multi-nus send function
-		*/
+	
 		if (( (data[0] == 0) || (data[0]==9)) || (routedMessage == true) ) {
 			multi_nus_send(tx);
 		}
@@ -468,13 +445,7 @@ static int uart_init(void)
 	}
 
 	k_work_init_delayable(&uart_work, uart_work_handler);
-	//WRC
 	
-	// if (IS_ENABLED(CONFIG_BT_NUS_UART_ASYNC_ADAPTER) && !uart_test_async_api(uart)) {
-	// 	/* Implement API adapter */
-	// 	uart_async_adapter_init(async_adapter, uart);
-	// 	uart = async_adapter;
-	// }
 
 	err = uart_callback_set(uart, uart_cb, NULL);
 	if (err) {
@@ -505,19 +476,11 @@ static void discovery_complete(struct bt_gatt_dm *dm,
 		LOG_INF("Scanning started");
 	}
 
-	/*	Send a message to the new NUS server informing it of its ID in this 
-	*	mini-network
-	*	The new NUS will have been added to the connection context library and so
-	* 	will be the highest index as they are added incrementally upwards.
-	*	This is a bit of a workaround because in this function, I don't know
-	*	the ID of this connection which is the piece of info I want to transmit.
-	*/
+	
 	size_t num_nus_conns = bt_conn_ctx_count(&conns_ctx_lib);
 	size_t nus_index = 99;
 
-	/*	This is a little inelegant but we must get the index of the device to
-	* 	convey it
-	*/
+	
 	for (size_t i = 0; i < num_nus_conns; i++) {
 		const struct bt_conn_ctx *ctx =
 			bt_conn_ctx_get_by_id(&conns_ctx_lib, i);
@@ -611,13 +574,7 @@ static void connected(struct bt_conn *conn, uint8_t conn_err)
 {
 	char addr[BT_ADDR_LE_STR_LEN];
 	int err;
-/*	struct bt_nus_client_init_param init = {
-		.cb = {
-			.received = ble_data_received,
-			.sent = ble_data_sent,
-		}
-	};
-*/
+
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
 	if (conn_err) {
@@ -639,9 +596,7 @@ static void connected(struct bt_conn *conn, uint8_t conn_err)
 
 	LOG_INF("Connected: %s", addr);
 
-	/*Allocate memory for this connection using the connection context library. For reference,
-	this code was taken from hids.c
-	*/
+	
 	struct bt_nus_client *nus_client =bt_conn_ctx_alloc(&conns_ctx_lib, conn);
 
 	if (!nus_client) {
@@ -685,7 +640,7 @@ static void connected(struct bt_conn *conn, uint8_t conn_err)
 
 	gatt_discover(conn);
 
-	/*Stop scanning during the discovery*/
+	
 	err = bt_scan_stop();
 	if ((!err) && (err != -EALREADY)) {
 		LOG_ERR("Stop LE scan failed (err %d)", err);
@@ -711,11 +666,7 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 	bt_conn_unref(conn);
 	default_conn = NULL;
 
-	// err = bt_scan_start(BT_SCAN_TYPE_SCAN_ACTIVE);
-	// if (err) {
-	// 	LOG_ERR("Scanning failed to start (err %d)",
-	// 		err);
-	// }
+	
 }
 
 static void security_changed(struct bt_conn *conn, bt_security_t level,
@@ -881,7 +832,6 @@ int main(void)
 	LOG_INF("Scanning successfully started");
 
 	for (;;) {
-		/* Wait indefinitely for data to be sent over Bluetooth */
 		struct uart_data_t *buf = k_fifo_get(&fifo_uart_rx_data,
 						     K_FOREVER);
 
