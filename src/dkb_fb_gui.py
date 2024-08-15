@@ -114,6 +114,12 @@ class DKBFbGui:
         if self.ser is None:
             return
         
+        x='1.23456'
+        y='7.89012'
+        b='23.4567'
+
+        
+        
         
         
 
