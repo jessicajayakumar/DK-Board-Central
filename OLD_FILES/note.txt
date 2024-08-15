@@ -169,3 +169,46 @@ void set_random_motion(){
 [00:00:20.615,356] <dbg> central_uart: uart_cb: UART_TX_DONE
 [00:00:20.714,538] <inf> central_uart: Byte 0: 0x30 (decimal: 48)
 [00:00:20.714,569] <inf> centr
+
+
+[00:00:57.752,410] <inf> freebot_uart: Moving, current motion: 1
+--- 1 messages dropped ---
+[00:00:57.762,634] <inf> freebot_uart: Moving, current motion: 1
+--- 2 messages dropped ---
+[00:00:57.772,857] <inf> freebot_uart: Moving forward
+--- 1 messages dropped ---
+[00:00:57.783,081] <inf> freebot_uart: Moving forward
+--- 1 messages dropped ---
+[00:00:57.793,304] <inf> freebot_uart: Moving forward
+--- 1 messages dropped ---
+[00:00:57.803,527] <inf> freebot_uart: Moving forward
+--- 1 messages dropped ---
+[00:00:57.813,751] <inf> freebot_uart: Moving forward
+--- 1 messages dropped ---
+[00:00:57.823,944] <inf> freebot_uart: Moving forward
+--- 1 messages dropped ---
+[00:00:57.834,167] <inf> freebot_uart: Moving forward
+[00:00:57.844,390] <inf> freebot_uart: Moving, current motion: 1
+[00:00:57.844,390] <inf> freebot_uart: Moving forward
+--- 1 messages dropped ---
+[00:00:57.854,614] <inf> freebot_uart: Moving forward
+--- 1 messages dropped ---
+
+
+[00:06:37.375,305] <inf> freebot_uart: Data received
+[00:06:37.375,335] <inf> freebot_uart: 0x39 
+[00:06:37.375,335] <inf> freebot_uart: 0x39 
+[00:06:37.375,366] <inf> freebot_uart: 0x61 
+[00:06:37.375,366] <inf> freebot_uart: 0x00 
+[00:07:12.178,192] <inf> freebot_uart: Data received
+[00:07:12.178,192] <inf> freebot_uart: 0x39 
+[00:07:12.178,222] <inf> freebot_uart: 0x39 
+[00:07:12.178,222] <inf> freebot_uart: 0x61 
+[00:07:12.178,253] <inf> freebot_uart: 0x00 
+[00:07:12.178,253] <inf> freebot_uart: 0x0a 
+[00:07:22.979,064] <inf> freebot_uart: Data received
+[00:07:22.979,125] <inf> freebot_uart: 0x62 
+[00:07:22.979,125] <inf> freebot_uart: 0x00 
+[00:07:22.979,125] <inf> freebot_uart: 0x0a 
+[00:07:22.979,156] <inf> freebot_uart: START received
+[00:07:22.979,156] <inf> freebot_uart: Am setting motion : 1
