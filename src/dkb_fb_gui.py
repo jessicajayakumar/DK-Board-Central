@@ -16,7 +16,7 @@ import threading
 
 _location = os.path.dirname(__file__)
 
-serial_port = '/dev/ttyACM2'  # Replace with your port
+serial_port = '/dev/ttyACM0'  # Replace with your port
 baud_rate = 115200
 log_file_path = 'serial_log.txt'
 file_1='freebot_1.txt'
@@ -117,6 +117,14 @@ class DKBFbGui:
         x='1.23456'
         y='7.89012'
         b='23.4567'
+
+        x_bytes = f'{x}'.encode('utf-8')
+
+        # Concatenate the bytes correctly
+        data = b'99e' + x_bytes + b'\n\n'
+
+        # Write the concatenated bytes to the serial port
+        self.ser.write(data)
 
         
         
