@@ -7,12 +7,14 @@ import threading
 import asyncio
 # import websockets
 import json
-from camera import *
+from camera import *   
 from vector2d import Vector2D
 import itertools
 import random
 import angles
 import time
+
+import serial
 
 red = (0, 0, 255)
 green = (0, 255, 0)
@@ -21,6 +23,9 @@ cyan = (255, 255, 0)
 yellow = (50, 255, 255)
 black = (0, 0, 0)
 white = (255, 255, 255)
+
+serial_port = '/dev/ttyACM0'  # Replace with your port
+baud_rate = 115200
 
 class Tag:
     def __init__(self, id, raw_tag):
@@ -96,6 +101,36 @@ class Tracker(threading.Thread):
         self.tasks = {}
         self.task_counter = 0
         self.score = 0
+
+        self.ser = self.open_serial_port(serial_port, baud_rate)
+        if self.ser is None:
+            return
+
+
+
+    def open_serial_port(self,port, baud_rate):
+        try:
+            ser = serial.Serial(
+                port, 
+                baud_rate, 
+                timeout=1,
+                parity=serial.PARITY_NONE,
+                stopbits=serial.STOPBITS_ONE,
+                bytesize=serial.EIGHTBITS
+                )
+
+            print(f"Opened serial port {port} with baud rate {baud_rate}")
+            return ser
+        except Exception as e:
+            print(f"Error opening serial port: {e}")
+            return None
+    
+    # function to write to serial port
+    def write_to_serial(self,ser, data):
+        try:
+            ser.write(data.encode())
+        except Exception as e:
+            print(f"Error writing to serial port: {e}")
 
     def run(self):
         while True:        
@@ -218,131 +253,6 @@ class Tracker(threading.Thread):
                         cv2.putText(overlay, text, position, font, font_scale, black, thickness * 3, cv2.LINE_AA)
                         cv2.putText(overlay, text, position, font, font_scale, white, thickness, cv2.LINE_AA)
 
-                    # # Create any new tasks, if necessary
-                    # while len(self.tasks) < 3:
-                    #     id = self.task_counter
-                    #     placed = False
-                    #     while not placed:
-                    #         overlaps = False
-                    #         workers = random.randint(1, 5)
-                    #         radius = math.sqrt(workers) * 0.1
-                    #         min_x_metres = self.min_x / self.scale_factor
-                    #         max_x_metres = self.max_x / self.scale_factor
-                    #         min_y_metres = self.min_y / self.scale_factor
-                    #         max_y_metres = self.max_y / self.scale_factor
-                    #         x = random.uniform(min_x_metres + radius, max_x_metres - radius)
-                    #         y = random.uniform(min_y_metres + radius, max_y_metres - radius)
-                    #         position = Vector2D(x, y) # In metres
-
-                    #         for other_task in self.tasks.values():
-                    #             overlap = radius + other_task.radius
-                    #             if position.distance_to(other_task.position) < overlap:
-                    #                 overlaps = True
-                            
-                    #         if not overlaps:
-                    #             placed = True
-
-                    #     time_limit = 20 * workers # 20 seconds per robot
-                    #     self.tasks[id] = Task(id, workers, position, radius, time_limit)
-                    #     self.task_counter = self.task_counter + 1
-
-                    # # Iterate over tasks
-                    # for task_id, task in self.tasks.items():
-
-                    #     task.robots = []
-
-                    #     # Check whether robot is within range
-                    #     for robot_id, robot in self.robots.items():
-                    #         distance = task.position.distance_to(robot.position)
-
-                    #         if distance < robot.sensor_range:
-
-                    #             absolute_bearing = math.degrees(math.atan2(task.position.y - robot.position.y, task.position.x - robot.position.x))
-                    #             relative_bearing = absolute_bearing - robot.orientation
-                    #             normalised_bearing = angles.normalize(relative_bearing, -180, 180)
-
-                    #             robot.tasks[task_id] = SensorReading(distance, normalised_bearing, workers=task.workers)
-
-                    #         if distance < task.radius:
-                    #             task.robots.append(robot_id)
-
-                    #     # print(f"Task {task_id} - workers: {task.workers}, robots: {task.robots}")
-
-                    #     time_now = time.time()
-                        
-                    #     if len(task.robots) >= task.workers:
-                    #         if not task.completing:
-                    #             task.completing = True
-                    #             task.arrival_time = time.time()
-                    #         elif time_now - task.arrival_time > 5:
-                    #             task.completed = True
-                    #     elif task.completing:
-                    #         task.completing = False
-
-                    #     pixel_radius = int(task.radius * self.scale_factor)
-                    #     x = int(task.position.x * self.scale_factor)
-                    #     y = int(task.position.y * self.scale_factor)
-
-                    #     # Draw task timer
-                    #     if not task.completing:
-                    #         task.elapsed_time = time_now - task.start_time
-                    #         if task.elapsed_time > 1:
-                    #             task.start_time = time_now
-                    #             task.counter = task.counter - 1
-                    #             if task.counter <= 1:
-                    #                 task.failed = True
-
-                    #     cv2.circle(overlay, (x, y), int((pixel_radius / task.time_limit) * task.counter), cyan, -1, lineType=cv2.LINE_AA)
-
-                    #     if task.completing:
-                    #         cv2.ellipse(overlay, (x, y), (pixel_radius, pixel_radius), 0, -90, -90 + (((time_now - task.arrival_time) / 5) * 360), green, cv2.FILLED)
-
-                    #     if task.completing:
-                    #         colour = green
-                    #     else:
-                    #         colour = red
-
-                    #     # Draw task boundary
-                    #     cv2.circle(image, (x, y), pixel_radius, black, 10, lineType=cv2.LINE_AA)
-                    #     cv2.circle(image, (x, y), pixel_radius, colour, 5, lineType=cv2.LINE_AA)
-                    #     cv2.circle(overlay, (x, y), pixel_radius, black, 10, lineType=cv2.LINE_AA)
-                    #     cv2.circle(overlay, (x, y), pixel_radius, colour, 5, lineType=cv2.LINE_AA)
-
-                    #     # Draw task workers
-                    #     text = str(task.workers)
-                    #     font = cv2.FONT_HERSHEY_SIMPLEX
-                    #     font_scale = 1.5
-                    #     thickness = 4
-                    #     textsize = cv2.getTextSize(text, font, font_scale, thickness)[0]
-                    #     position = (int(x - textsize[0]/2), int(y + textsize[1]/2))
-                    #     cv2.putText(image, text, position, font, font_scale, black, thickness * 3, cv2.LINE_AA)
-                    #     cv2.putText(image, text, position, font, font_scale, colour, thickness, cv2.LINE_AA)
-                    #     cv2.putText(overlay, text, position, font, font_scale, black, thickness * 3, cv2.LINE_AA)
-                    #     cv2.putText(overlay, text, position, font, font_scale, colour, thickness, cv2.LINE_AA)
-
-                    # # Delete completed tasks
-                    # for task_id in list(self.tasks.keys()):
-                    #     task = self.tasks[task_id]
-                    #     if task.completed:
-                    #         self.score = self.score + task.workers
-                    #         del self.tasks[task_id]
-                    #         print("completed", task_id)
-                    #     elif task.failed:
-                    #         del self.tasks[task_id]
-                    #         print("failed", task_id)
-
-                    # # Draw the score
-                    # text = f"Score: {self.score}"
-                    # font = cv2.FONT_HERSHEY_SIMPLEX
-                    # font_scale = 2
-                    # thickness = 5
-                    # textsize = cv2.getTextSize(text, font, font_scale, thickness)[0]
-                    # position = (10, 60)
-                    # cv2.putText(image, text, position, font, font_scale, black, thickness * 3, cv2.LINE_AA)
-                    # cv2.putText(image, text, position, font, font_scale, green, thickness, cv2.LINE_AA)
-                    # cv2.putText(overlay, text, position, font, font_scale, black, thickness * 3, cv2.LINE_AA)
-                    # cv2.putText(overlay, text, position, font, font_scale, green, thickness, cv2.LINE_AA)
-
                     # Transparency for overlaid augments
                     alpha = 0.3
                     image = cv2.addWeighted(overlay, alpha, image, 1 - alpha, 0)
@@ -355,14 +265,21 @@ class Tracker(threading.Thread):
                 print(f'ID: {id}, x = {robot.position.x}, y = {robot.position.y},  orientation = {robot.orientation}')
                 # print(f'ID: {id}, x = {robot.position.x}, y = {robot.position.y},  orientation = {robot.orientation},\n\tneighbours: {robot.neighbours}')
 
+                position_x= f'{robot.position.x}'.encode('utf-8')
+                position_y= f'{robot.position.y}'.encode('utf-8')
+                orientation= f'{robot.orientation}'.encode('utf-8')
+
+                data_x=b'99e'+ position_x + b'\n\n'
+                data_y=b'99e'+ position_y + b'\n\n'
+                data_orientation=b'99e'+ orientation + b'\n\n'
+
+                self.ser.write(data_x)
+                self.ser.write(data_y)
+                self.ser.write(data_orientation)
 
             window_name = 'SwarmHack'
 
-            # screen = screeninfo.get_monitors()[0]
-            # width, height = screen.width, screen.height
-            # image = cv2.resize(image, (width, height))
-            # cv2.namedWindow(window_name, cv2.WND_PROP_FULLSCREEN)
-            # cv2.setWindowProperty(window_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+     
 
             cv2.imshow(window_name, image)
 
@@ -370,43 +287,6 @@ class Tracker(threading.Thread):
             if cv2.waitKey(1) == ord('q'):
                 sys.exit()
 
-# async def handler(websocket):
-#     async for packet in websocket:
-#         message = json.loads(packet)
-        
-#         # Process any requests received
-#         reply = {}
-#         send_reply = False
-
-#         if "check_awake" in message:
-#             reply["awake"] = True
-#             send_reply = True
-
-#         if "get_robots" in message:
-
-#             for id, robot in tracker.robots.items():
-#                 reply[id] = {}
-#                 reply[id]["orientation"] = robot.orientation
-#                 reply[id]["neighbours"] = {}
-#                 reply[id]["tasks"] = {}
-
-#                 for neighbour_id, neighbour in robot.neighbours.items():
-#                     reply[id]["neighbours"][neighbour_id] = {}
-#                     reply[id]["neighbours"][neighbour_id]["range"] = neighbour.range
-#                     reply[id]["neighbours"][neighbour_id]["bearing"] = neighbour.bearing
-#                     reply[id]["neighbours"][neighbour_id]["orientation"] = neighbour.orientation
-
-#                 for task_id, task in robot.tasks.items():
-#                     reply[id]["tasks"][task_id] = {}
-#                     reply[id]["tasks"][task_id]["range"] = task.range
-#                     reply[id]["tasks"][task_id]["bearing"] = task.bearing
-#                     reply[id]["tasks"][task_id]["workers"] = task.workers
-
-#             send_reply = True
-
-#         # Send reply, if requested
-#         if send_reply:
-#             await websocket.send(json.dumps(reply))
 
 
 # TODO: Handle Ctrl+C signals
@@ -414,15 +294,3 @@ if __name__ == "__main__":
     global tracker
     tracker = Tracker()
     tracker.start()
-
-    # ##
-    # # Use the following iptables rule to forward port 80 to 6000 for the server to use:
-    # #   sudo iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 6000
-    # # Alternatively, change the port below to 80 and run this Python script as root.
-    # ##
-    # start_server = websockets.serve(ws_handler=handler, host=None, port=6000)
-    # # start_server = websockets.serve(ws_handler=handler, host="144.32.165.233", port=6000)
-
-    # loop = asyncio.get_event_loop()
-    # loop.run_until_complete(start_server)
-    # loop.run_forever()

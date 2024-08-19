@@ -126,10 +126,7 @@ class DKBFbGui:
         # Write the concatenated bytes to the serial port
         self.ser.write(data)
 
-        
-        
-        
-        
+         
 
     def set_recipient(self,recipient):
         self.recipient = recipient
