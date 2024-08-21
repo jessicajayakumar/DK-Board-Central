@@ -24,7 +24,7 @@ yellow = (50, 255, 255)
 black = (0, 0, 0)
 white = (255, 255, 255)
 
-serial_port = '/dev/ttyACM0'  # Replace with your port
+serial_port = '/dev/ttyACM1'  # Replace with your port
 baud_rate = 115200
 
 class Tag:
@@ -150,6 +150,8 @@ class Tracker(threading.Thread):
                 tag_ids = list(itertools.chain(*tag_ids))
                 tag_ids = [int(id) for id in tag_ids] # Convert from numpy.int32 to int
 
+                print(tag_ids)
+
                 # Process raw ArUco output
                 for id, raw_tag in zip(tag_ids, raw_tags):
 
@@ -264,22 +266,26 @@ class Tracker(threading.Thread):
                 robot.orientation = round(robot.orientation, 6)
                 print(f'ID: {id}, x = {robot.position.x}, y = {robot.position.y},  orientation = {robot.orientation}')
                 # print(f'ID: {id}, x = {robot.position.x}, y = {robot.position.y},  orientation = {robot.orientation},\n\tneighbours: {robot.neighbours}')
-
+                
+                
                 position_x= f'{robot.position.x}'.encode('utf-8')
                 position_y= f'{robot.position.y}'.encode('utf-8')
                 orientation= f'{robot.orientation}'.encode('utf-8')
+                
+                print("Data utf-8 encoded")
 
-                data_x=b'99e'+ position_x + b'\n\n'
-                data_y=b'99e'+ position_y + b'\n\n'
-                data_orientation=b'99e'+ orientation + b'\n\n'
+                data=b'99e'+ position_x + position_y +  orientation + b'\n\n'
+                
+                print("Data ready to send")
 
-                self.ser.write(data_x)
-                self.ser.write(data_y)
-                self.ser.write(data_orientation)
+                self.ser.write(data)
+                
+                
+                print("Data written to serial")
+                
+                time.sleep(2)
 
             window_name = 'SwarmHack'
-
-     
 
             cv2.imshow(window_name, image)
 
