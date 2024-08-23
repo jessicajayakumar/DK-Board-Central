@@ -254,6 +254,9 @@ static uint8_t ble_data_received(struct bt_nus_client *nus,const uint8_t *const 
 		for (size_t i = 0; i < tx->len; i++) {
 			LOG_INF("Received data as raw integer: %c", tx->data[i]);	
 		}
+
+		// check if the message is the ID of the connectd device
+		
 	
 		if (( (data[0] == 0) || (data[0]==9)) || (routedMessage == true) ) {
 			multi_nus_send(tx);

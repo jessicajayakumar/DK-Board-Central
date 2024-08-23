@@ -24,7 +24,7 @@ yellow = (50, 255, 255)
 black = (0, 0, 0)
 white = (255, 255, 255)
 
-serial_port = '/dev/ttyACM1'  # Replace with your port
+serial_port = '/dev/ttyACM0'  # Replace with your port
 baud_rate = 115200
 
 class Tag:
