@@ -40,7 +40,7 @@
 #include <zephyr/logging/log.h>
 
 #define LOG_MODULE_NAME central_uart
-LOG_MODULE_REGISTER(LOG_MODULE_NAME);
+LOG_MODULE_REGISTER(LOG_MODULE_NAME,LOG_LEVEL_DBG);
 
 
 #define UART_BUF_SIZE 30
@@ -251,11 +251,15 @@ static uint8_t ble_data_received(struct bt_nus_client *nus,const uint8_t *const 
 			tx->len++;
 		}
 
-		for (size_t i = 0; i < tx->len; i++) {
-			LOG_INF("Received data as raw integer: %c", tx->data[i]);	
-		}
+		// for (size_t i = 0; i < tx->len; i++) {
+		// 	LOG_INF("Received data as raw integer: %c", tx->data[i]);	
+		// }
 
-		// check if the message is the ID of the connectd device
+		// check if the message is the ID of the connected device
+		if (data[0]=='*'){
+			LOG_INF("Received ID: %d", tx->data);
+			//err = multi_nus_send(tx);
+		}
 		
 	
 		if (( (data[0] == 0) || (data[0]==9)) || (routedMessage == true) ) {
