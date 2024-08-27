@@ -252,7 +252,30 @@ class Tracker(threading.Thread):
                         cv2.putText(image, text, position, font, font_scale, white, thickness, cv2.LINE_AA)
                         cv2.putText(overlay, text, position, font, font_scale, black, thickness * 3, cv2.LINE_AA)
                         cv2.putText(overlay, text, position, font, font_scale, white, thickness, cv2.LINE_AA)
-
+                        
+                        # TEMP: Draw x, y, angle
+                        if id == 51:
+                            texts = {
+                                'x': round(robot.position.x, 6),
+                                'y': round(robot.position.y, 6),
+                                'theta': round(robot.orientation, 2)
+                            }
+                            
+                            y_height = 0
+                            
+                            for field, value in texts.items():
+                                text = f'{field}: {value}'
+                                font = cv2.FONT_HERSHEY_SIMPLEX
+                                font_scale = 2
+                                thickness = 5
+                                textsize = cv2.getTextSize(text, font, font_scale, thickness)[0]
+                                y_height += 70
+                                position = (10, y_height)
+                                cv2.putText(image, text, position, font, font_scale, black, thickness * 3, cv2.LINE_AA)
+                                cv2.putText(image, text, position, font, font_scale, white, thickness, cv2.LINE_AA)
+                                cv2.putText(overlay, text, position, font, font_scale, black, thickness * 3, cv2.LINE_AA)
+                                cv2.putText(overlay, text, position, font, font_scale, white, thickness, cv2.LINE_AA)
+                                
                     # Transparency for overlaid augments
                     alpha = 0.3
                     image = cv2.addWeighted(overlay, alpha, image, 1 - alpha, 0)
@@ -290,22 +313,23 @@ class Tracker(threading.Thread):
             
             # print the robot's id, position and orientation
             for id, robot in self.robots.items():
-                robot.position.x = round(robot.position.x, 6)
-                robot.position.y = round(robot.position.y, 6)
-                robot.orientation = round(robot.orientation, 6)
-                print(f'ID: {id}, x = {robot.position.x}, y = {robot.position.y},  orientation = {robot.orientation}')
-                # print(f'ID: {id}, x = {robot.position.x}, y = {robot.position.y},  orientation = {robot.orientation},\n\tneighbours: {robot.neighbours}')
+                if id == 51: # TEMP
+                    robot.position.x = round(robot.position.x, 6)
+                    robot.position.y = round(robot.position.y, 6)
+                    robot.orientation = round(robot.orientation, 6)
+                    print(f'ID: {id}, x = {robot.position.x}, y = {robot.position.y},  orientation = {robot.orientation}')
+                    # print(f'ID: {id}, x = {robot.position.x}, y = {robot.position.y},  orientation = {robot.orientation},\n\tneighbours: {robot.neighbours}')
+                    
+                    position_x= f'{robot.position.x}'.encode('utf-8')
+                    position_y= f'{robot.position.y}'.encode('utf-8')
+                    orientation= f'{robot.orientation}'.encode('utf-8')
+                    
+                    data = b'99e'+ position_x + b',' + position_y + b',' + orientation + b'\n\n'
+                    
+                    self.ser.write(data)
+                    
+                    print(f"Data written to serial: {data}")
                 
-                position_x= f'{robot.position.x}'.encode('utf-8')
-                position_y= f'{robot.position.y}'.encode('utf-8')
-                orientation= f'{robot.orientation}'.encode('utf-8')
-                
-                data = b'99e'+ position_x + b',' + position_y + b',' + orientation + b'\n\n'
-                
-                self.ser.write(data)
-                
-                print(f"Data written to serial: {data}")
-            
             time.sleep(0.5)
 
 
