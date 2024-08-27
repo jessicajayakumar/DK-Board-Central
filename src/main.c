@@ -43,12 +43,12 @@
 LOG_MODULE_REGISTER(LOG_MODULE_NAME,LOG_LEVEL_DBG);
 
 
-#define UART_BUF_SIZE 30
+#define UART_BUF_SIZE 40
 
 #define KEY_PASSKEY_ACCEPT DK_BTN1_MSK
 #define KEY_PASSKEY_REJECT DK_BTN2_MSK
 
-#define NUS_WRITE_TIMEOUT K_MSEC(500)
+#define NUS_WRITE_TIMEOUT K_MSEC(150)
 #define UART_WAIT_FOR_BUF_DELAY K_MSEC(50)
 #define UART_RX_TIMEOUT 50000
 
@@ -843,6 +843,6 @@ int main(void)
 						     K_FOREVER);
 
 		multi_nus_send(buf);					
-		
+		k_free(buf);
 	}
 }

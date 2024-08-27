@@ -267,23 +267,21 @@ class Tracker(threading.Thread):
                 print(f'ID: {id}, x = {robot.position.x}, y = {robot.position.y},  orientation = {robot.orientation}')
                 # print(f'ID: {id}, x = {robot.position.x}, y = {robot.position.y},  orientation = {robot.orientation},\n\tneighbours: {robot.neighbours}')
                 
-                
                 position_x= f'{robot.position.x}'.encode('utf-8')
                 position_y= f'{robot.position.y}'.encode('utf-8')
                 orientation= f'{robot.orientation}'.encode('utf-8')
                 
-                print("Data utf-8 encoded")
+                # print("Data utf-8 encoded")
 
-                data=b'99e'+ position_x + position_y +  orientation + b'\n\n'
+                data=b'99e'+ position_x + b',' + position_y + b',' + orientation + b'\n\n'
                 
-                print("Data ready to send")
+                # print("Data ready to send")
 
                 self.ser.write(data)
                 
+                print(f"Data written to serial: {data}")
                 
-                print("Data written to serial")
-                
-                time.sleep(2)
+            time.sleep(1)
 
             window_name = 'SwarmHack'
 
