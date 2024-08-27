@@ -106,7 +106,7 @@ class Tracker(threading.Thread):
         if self.ser is None:
             return
 
-
+        self.data_to_send = {}
 
     def open_serial_port(self,port, baud_rate):
         try:
@@ -149,8 +149,6 @@ class Tracker(threading.Thread):
 
                 tag_ids = list(itertools.chain(*tag_ids))
                 tag_ids = [int(id) for id in tag_ids] # Convert from numpy.int32 to int
-
-                print(tag_ids)
 
                 # Process raw ArUco output
                 for id, raw_tag in zip(tag_ids, raw_tags):
@@ -259,6 +257,37 @@ class Tracker(threading.Thread):
                     alpha = 0.3
                     image = cv2.addWeighted(overlay, alpha, image, 1 - alpha, 0)
 
+            # # print the robot's id, position and orientation
+            # for id, robot in self.robots.items():
+            #     robot.position.x = round(robot.position.x, 6)
+            #     robot.position.y = round(robot.position.y, 6)
+            #     robot.orientation = round(robot.orientation, 6)
+            #     print(f'ID: {id}, x = {robot.position.x}, y = {robot.position.y},  orientation = {robot.orientation}')
+            #     # print(f'ID: {id}, x = {robot.position.x}, y = {robot.position.y},  orientation = {robot.orientation},\n\tneighbours: {robot.neighbours}')
+                
+            #     position_x= f'{robot.position.x}'.encode('utf-8')
+            #     position_y= f'{robot.position.y}'.encode('utf-8')
+            #     orientation= f'{robot.orientation}'.encode('utf-8')
+                
+            #     self.data_to_send[id] = b'99e'+ position_x + b',' + position_y + b',' + orientation + b'\n\n'
+                
+            #     self.ser.write(data)
+                
+            #     print(f"Data written to serial: {data}")
+                
+            # time.sleep(0.1)
+
+            window_name = 'SwarmHack'
+
+            cv2.imshow(window_name, image)
+
+            # TODO: Fix quitting with Q (necessary for fullscreen mode)
+            if cv2.waitKey(1) == ord('q'):
+                sys.exit()
+
+    def send_robot_data(self):
+        while True:
+            
             # print the robot's id, position and orientation
             for id, robot in self.robots.items():
                 robot.position.x = round(robot.position.x, 6)
@@ -271,30 +300,24 @@ class Tracker(threading.Thread):
                 position_y= f'{robot.position.y}'.encode('utf-8')
                 orientation= f'{robot.orientation}'.encode('utf-8')
                 
-                # print("Data utf-8 encoded")
-
-                data=b'99e'+ position_x + b',' + position_y + b',' + orientation + b'\n\n'
+                data = b'99e'+ position_x + b',' + position_y + b',' + orientation + b'\n\n'
                 
-                # print("Data ready to send")
-
                 self.ser.write(data)
                 
                 print(f"Data written to serial: {data}")
-                
-            time.sleep(1)
-
-            window_name = 'SwarmHack'
-
-            cv2.imshow(window_name, image)
-
-            # TODO: Fix quitting with Q (necessary for fullscreen mode)
-            if cv2.waitKey(1) == ord('q'):
-                sys.exit()
-
+            
+            time.sleep(0.5)
 
 
 # TODO: Handle Ctrl+C signals
 if __name__ == "__main__":
+    
+    # Start tracker
     global tracker
     tracker = Tracker()
     tracker.start()
+    
+    # Start thread for sending data to the robots
+    send_thread = threading.Thread(target=tracker.send_robot_data)
+    send_thread.start()
+        
