@@ -192,6 +192,10 @@ class Tracker(threading.Thread):
 
                     # Draw boundary of virtual environment based on corner tag positions
                     cv2.rectangle(image, (self.min_x, self.min_y), (self.max_x, self.max_y), green, 1, lineType=cv2.LINE_AA)
+                        
+                    # Draw work and charge regions
+                    cv2.rectangle(overlay, (self.min_x, self.min_y), (self.min_x + 200, self.max_y), green, -1, lineType=cv2.LINE_AA)
+                    cv2.rectangle(overlay, (self.max_x - 200, self.min_y), (self.max_x, self.max_y), red, -1, lineType=cv2.LINE_AA)
             
                     # Process robots
                     for id, robot in self.robots.items():
@@ -222,9 +226,9 @@ class Tracker(threading.Thread):
                         # Draw circle on centre point
                         cv2.circle(image, (tag.centre.x, tag.centre.y), 5, red, -1, lineType=cv2.LINE_AA)
 
-                        # Draw robot's sensor range
-                        sensor_range_pixels = int(robot.sensor_range * self.scale_factor)
-                        cv2.circle(overlay, (tag.centre.x, tag.centre.y), sensor_range_pixels, magenta, -1, lineType=cv2.LINE_AA)
+                        # # Draw robot's sensor range
+                        # sensor_range_pixels = int(robot.sensor_range * self.scale_factor)
+                        # cv2.circle(overlay, (tag.centre.x, tag.centre.y), sensor_range_pixels, magenta, -1, lineType=cv2.LINE_AA)
 
                         # Draw lines between robots if they are within sensor range
                         for neighbour_id in robot.neighbours.keys():
