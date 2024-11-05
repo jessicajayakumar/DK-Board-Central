@@ -1,3 +1,4 @@
+
 # GUI for controlling the FreeBot by sending commands from the DKB
 # Able to log voltage readings from the FreeBot and plot the data
 # Author: Jessica
@@ -50,65 +51,32 @@ class DKBFbGui:
         '''This class configures and populates the toplevel window.
            top is the toplevel containing window.'''
 
-        top.geometry("709x545+2825+178")
+
+
+        top.geometry("600x450+2700+158")
         top.minsize(1, 1)
         top.maxsize(3825, 1050)
         top.resizable(1,  1)
         top.title("Toplevel 0")
-
+   
         self.top = top
+
+        self.Button1 = tk.Button(self.top)
+        self.Button1.place(relx=0.083, rely=0.067, height=391, width=501)
+        self.Button1.configure(activebackground="#d9d9d9")
+        self.Button1.configure(background="#0cb500")
+        self.Button1.configure(font="-family {DejaVu Sans} -size 72 -weight bold")
+        self.Button1.configure(text='''START''')
+
+  
 
         self.recipient = None
         self.logging_thread = None
         self.logging_active = False
 
-        self.Frame1 = tk.Frame(self.top)
-        self.Frame1.place(relx=0.508, rely=0.055, relheight=0.266, relwidth=0.458)
-        self.Frame1.configure(relief='groove',borderwidth="2")
-
-        self.Label1 = tk.Label(self.Frame1)
-        self.Label1.place(relx=0.092, rely=0.069, height=31, width=279)
-        self.Label1.configure(activebackground="#d9d9d9", anchor='w',compound='left', text='Select the recepient of the command:')
-
-        self.Recipient = tk.Label(self.Frame1)
-        self.Recipient.place(relx=0.215, rely=0.276, height=21, width=109)
-        self.Recipient.configure(activebackground="#d9d9d9", anchor='w', compound='left',text='''Recipient''')
-        
-        self.boardcast = tk.Button(self.Frame1)
-        self.boardcast.place(relx=0.062, rely=0.414, height=71, width=81)
-        self.boardcast.configure(activebackground="#d9d9d9",text='''Broadcast''',command=lambda: self.set_recipient('broadcast'))
-
-        self.FB1 = tk.Button(self.Frame1)
-        self.FB1.place(relx=0.369, rely=0.414, height=71, width=81)
-        self.FB1.configure(activebackground="#d9d9d9",font="-family {DejaVu Sans} -size 10",text='''FreeBot 1''',command=lambda: self.set_recipient('FB1'))
-
-        self.FB2 = tk.Button(self.Frame1)
-        self.FB2.place(relx=0.677, rely=0.414, height=71, width=81)
-        self.FB2.configure(activebackground="#d9d9d9",font="-family {DejaVu Sans} -size 10",text='''FreeBot 2''',command=lambda: self.set_recipient('FB2'))
-
-        self.Plot = tk.Button(self.top)
-        self.Plot.place(relx=0.282, rely=0.055, height=161, width=141)
-        self.Plot.configure(activebackground="#d9d9d9",font="-family {DejaVu Sans} -size 10", text='''PLOT / STOP LOG''', command=lambda: self.logging_stop(log_file_path,file_1,file_2))
-
         self.Log = tk.Button(self.top)
         self.Log.place(relx=0.056, rely=0.055, height=161, width=141)
         self.Log.configure(activebackground="#d9d9d9",text='''START LOGGING''', command=lambda: self.logging_start(self.ser,log_file_path))
-
-        self.Start = tk.Button(self.top)
-        self.Start.place(relx=0.127, rely=0.404, height=131, width=231)
-        self.Start.configure(activebackground="#d9d9d9",text='''Move ON''', command=self.move_on)
-
-        self.Stop = tk.Button(self.top)
-        self.Stop.place(relx=0.127, rely=0.697, height=131, width=231)
-        self.Stop.configure(activebackground="#d9d9d9",text='''Move OFF''', command=self.move_off)
-
-        self.v_stop = tk.Button(self.top)
-        self.v_stop.place(relx=0.55, rely=0.697, height=131, width=231)
-        self.v_stop.configure(activebackground="#d9d9d9",font="-family {DejaVu Sans} -size 10",text='''Voltage Send OFF''', command=self.voltage_send_off)
-
-        self.v_start = tk.Button(self.top)
-        self.v_start.place(relx=0.55, rely=0.404, height=131, width=231)
-        self.v_start.configure(activebackground="#d9d9d9",font="-family {DejaVu Sans} -size 10",text='''Voltage Send ON''', command=self.voltage_send_on)
 
         self.ser = self.open_serial_port(serial_port, baud_rate)
         if self.ser is None:
@@ -342,3 +310,16 @@ class DKBFbGui:
 
 if __name__ == '__main__':
     main()
+
+
+
+
+
+
+
+
+
+
+
+
+
