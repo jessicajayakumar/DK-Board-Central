@@ -52,7 +52,6 @@ class DKBFbGui:
            top is the toplevel containing window.'''
 
 
-
         top.geometry("600x450+2700+158")
         top.minsize(1, 1)
         top.maxsize(3825, 1050)
